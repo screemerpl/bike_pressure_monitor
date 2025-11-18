@@ -36,6 +36,7 @@ void Application::init() {
 	recordStartTime();
 	initBLE();
 	startUISystem();
+	startConfigServer();
 
 	printf("Application initialized successfully\n");
 }
@@ -109,11 +110,14 @@ void Application::initBLE() {
 	NimBLEScan *pBLEScan = NimBLEDevice::getScan();
 
 	pBLEScan->setScanCallbacks(&m_scanCallbacks, false);
-	pBLEScan->setActiveScan(true);
+	// Passive scan to reduce interference with WiFi
+	pBLEScan->setActiveScan(false);
+	pBLEScan->setInterval(160); // 100ms
+	pBLEScan->setWindow(80);    // 50ms (50% duty cycle for WiFi coexistence)
 	pBLEScan->setMaxResults(0);
 	pBLEScan->start(BLE_SCAN_TIME_MS, false, true);
 
-	printf("BLE scanning started\n");
+	printf("BLE scanning started (passive mode for WiFi coexistence)\n");
 }
 
 void Application::controlLogicTask() {
@@ -311,4 +315,31 @@ void Application::updateLabelsCallback(void *arg) {
 
 void Application::controlLogicTaskWrapper(void *pvParameter) {
 	static_cast<Application *>(pvParameter)->controlLogicTask();
+}
+
+void Application::startConfigServer() {
+	printf("Starting WiFi config server...\n");
+
+	// Initialize WiFi AP
+	WiFiManager &wifi = WiFiManager::instance();
+	if (!wifi.init()) {
+		printf("Failed to initialize WiFi\n");
+		return;
+	}
+
+	if (!wifi.start()) {
+		printf("Failed to start WiFi AP\n");
+		return;
+	}
+
+	// Start web server
+	WebServer &web = WebServer::instance();
+	if (!web.start()) {
+		printf("Failed to start web server\n");
+		wifi.stop();
+		return;
+	}
+
+	printf("Config server running - WiFi: TPMS-Config, IP: %s\n",
+		   wifi.getIPAddress().c_str());
 }

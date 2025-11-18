@@ -15,6 +15,7 @@ public:
 	void showSplashScreen();
 	void showMainScreen();
 	void showPairScreen();
+	void showConfigScreen();
 
 	// UI initialization
 	void initializeLabels();

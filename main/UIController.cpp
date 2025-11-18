@@ -61,6 +61,13 @@ void UIController::showPairScreen() {
 	lv_screen_load_anim(ui_Pair, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
+void UIController::showConfigScreen() {
+	// Show splash screen with config mode message
+	lv_label_set_text(ui_Label1, "WiFi Config Mode");
+	lv_label_set_text(ui_Label2, "Connect to: TPMS-Config");
+	lv_screen_load_anim(ui_Splash, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, false);
+}
+
 void UIController::initializeLabels() {
 	lv_label_set_text(ui_Label3, "---");
 	lv_label_set_text(ui_Label4, "---");

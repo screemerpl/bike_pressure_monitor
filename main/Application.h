@@ -5,6 +5,8 @@
 #include "PairController.h"
 #include "TPMSScanCallbacks.h"
 #include "UIController.h"
+#include "WiFiManager.h"
+#include "WebServer.h"
 #include <cstdint>
 
 class Application {
@@ -36,6 +38,7 @@ private:
 	void recordStartTime();
 	void startUISystem();
 	void initBLE();
+	void startConfigServer();
 
 	// Main control task
 	void controlLogicTask();

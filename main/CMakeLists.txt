@@ -11,7 +11,7 @@ file(GLOB APP_SOURCES "*.cpp")
 idf_component_register(SRCS ${APP_SOURCES}
                             ${UI_SOURCES}
                      INCLUDE_DIRS "." 
-                     REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom)
+                     REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom esp_http_server esp_netif esp_wifi nvs_flash)
 
 
 
