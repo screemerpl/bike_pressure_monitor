@@ -47,8 +47,11 @@ void Application::loadConfiguration() {
 	printf("Loaded JSON Config: %s\n", m_config.getJsonString().c_str());
 
 	// Load sensor addresses
-	m_config.getString("front_address", state.frontAddress, "80:ea:ca:10:05:32");
-	m_config.getString("rear_address", state.rearAddress, "81:ea:ca:20:04:10");
+	m_config.getString("front_address", state.frontAddress, "");
+	m_config.getString("rear_address", state.rearAddress, "");
+
+	printf("Loaded sensor addresses: Front=%s, Rear=%s\n",
+		   state.frontAddress.c_str(), state.rearAddress.c_str());
 
 	// Load ideal pressure values
 	m_config.getFloat("front_ideal_psi", state.frontIdealPSI, DEFAULT_FRONT_PSI);
@@ -74,6 +77,7 @@ void Application::initializeDisplay() {
 	m_display->init();
 
 	m_uiController = &UIController::instance();
+	m_pairController = &PairController::instance();
 
 	// Apply saved brightness setting
 	m_display->setBacklightBrightness(BRIGHTNESS_LEVELS[m_currentBrightnessIndex]);
@@ -115,6 +119,7 @@ void Application::initBLE() {
 void Application::controlLogicTask() {
 	bool splashShown = false;
 	bool mainShown = false;
+	bool inPairingMode = false;
 
 	configureButton();
 
@@ -122,12 +127,25 @@ void Application::controlLogicTask() {
 
 	for (;;) {
 		uint32_t elapsed = getElapsedTime();
+		uint32_t currentTime = esp_timer_get_time() / 1000;
 
 		handleScreenTransitions(elapsed, splashShown, mainShown);
 
 		if (mainShown) {
-			handleButtonInput(buttonState);
-			updateUIIfPaired();
+			State &state = State::getInstance();
+			
+			if (!state.isPaired) {
+				// In pairing mode
+				if (!inPairingMode) {
+					inPairingMode = true;
+				}
+				m_pairController->update(currentTime);
+				handleButtonInput(buttonState);
+			} else {
+				// Normal operation
+				handleButtonInput(buttonState);
+				updateUIIfPaired();
+			}
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(CONTROL_LOOP_DELAY_MS));
@@ -150,17 +168,27 @@ uint32_t Application::getElapsedTime() const {
 
 void Application::handleScreenTransitions(uint32_t elapsed, bool &splashShown,
 										  bool &mainShown) {
+	State &state = State::getInstance();
+	
 	if (elapsed >= SPLASH_SCREEN_DELAY_MS && !splashShown) {
 		lv_async_call(showSplashScreenCallback, nullptr);
 		splashShown = true;
 		printf("Showing splash screen\n");
 	} else if (elapsed >= MAIN_SCREEN_DELAY_MS && !mainShown) {
-		lv_async_call(initializeLabelsCallback, nullptr);
-		printf("Labels initialized\n");
-		vTaskDelay(pdMS_TO_TICKS(LABEL_INIT_DELAY_MS));
-		lv_async_call(showMainScreenCallback, nullptr);
+		if (state.isPaired) {
+			// Show main screen if paired
+			lv_async_call(initializeLabelsCallback, nullptr);
+			printf("Labels initialized\n");
+			vTaskDelay(pdMS_TO_TICKS(LABEL_INIT_DELAY_MS));
+			lv_async_call(showMainScreenCallback, nullptr);
+			printf("Showing main screen\n");
+		} else {
+			// Show pairing screen if not paired
+			lv_async_call(showPairScreenCallback, nullptr);
+			m_pairController->init();
+			printf("Showing pair screen - not paired\n");
+		}
 		mainShown = true;
-		printf("Showing main screen\n");
 	}
 }
 
@@ -193,12 +221,29 @@ void Application::handleButtonInput(ButtonState &state) {
 }
 
 void Application::handleLongPress() {
-	printf("Long press detected - switching to Pair screen\n");
-	lv_async_call(showPairScreenCallback, nullptr);
+	printf("Long press detected - clearing sensor addresses and rebooting...\n");
+	
+	// Clear sensor addresses from config
+	m_config.setString("front_address", "");
+	m_config.setString("rear_address", "");
+	
+	// Give time for user feedback
+	vTaskDelay(pdMS_TO_TICKS(500));
+	
+	// Reboot the device
+	esp_restart();
 }
 
 void Application::handleShortPress() {
-	cycleBrightness();
+	State &state = State::getInstance();
+	
+	if (!state.isPaired) {
+		// In pairing mode - pass button press to pair controller
+		m_pairController->handleButtonPress();
+	} else {
+		// Normal mode - cycle brightness
+		cycleBrightness();
+	}
 }
 
 void Application::cycleBrightness() {

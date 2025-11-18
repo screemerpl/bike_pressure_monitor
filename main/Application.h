@@ -2,13 +2,18 @@
 
 #include "ConfigManager.h"
 #include "DisplayManager.h"
+#include "PairController.h"
 #include "TPMSScanCallbacks.h"
 #include "UIController.h"
 #include <cstdint>
 
 class Application {
 public:
-	static constexpr char appVersion[] = "0.1.0";
+#ifdef GIT_VERSION
+	static constexpr char appVersion[] = GIT_VERSION;
+#else
+	static constexpr char appVersion[] = "1.0.0-dev";
+#endif
 
 	static Application &instance();
 
@@ -68,6 +73,7 @@ private:
 	ConfigManager m_config;
 	DisplayManager *m_display = nullptr;
 	UIController *m_uiController = nullptr;
+	PairController *m_pairController = nullptr;
 	TPMSScanCallbacks m_scanCallbacks;
 	uint32_t m_startTime = 0;
 
