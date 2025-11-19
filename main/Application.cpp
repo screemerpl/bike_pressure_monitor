@@ -7,7 +7,6 @@
 
 #include "Application.h"
 #include "State.h"             // Global state singleton
-#include "SPIFFSManager.h"     // SPIFFS for UI assets
 #include "driver/gpio.h"       // GPIO configuration for button
 #include "esp_timer.h"         // High-resolution timer for timestamps
 #include "esp_log.h"           // ESP logging
@@ -57,9 +56,6 @@ void Application::init() {
 	// Set default log level for all components
 	esp_log_level_set("*", ESP_LOG_WARN);
 	ESP_LOGI(TAG, "Initializing application...");
-
-	// Initialize SPIFFS for UI assets (PNG images)
-	SPIFFSManager::instance().init();
 
 	// Load configuration from NVS (sensors, brightness, WiFi mode flag)
 	loadConfiguration();
