@@ -1,3 +1,10 @@
+/**
+ * @file WebServer.cpp
+ * @brief HTTP server implementation for web configuration interface
+ * @details Implements REST API for device configuration and OTA updates.
+ *          Uses chunked transfer with retry logic for WiFi/BLE coexistence.
+ */
+
 #include "WebServer.h"
 #include "Application.h"
 #include "State.h"
@@ -10,20 +17,38 @@
 
 static const char *TAG = "WebServer";
 
-// OTA static members
+// OTA static members initialization
 bool WebServer::s_otaInProgress = false;
 int WebServer::s_otaProgress = 0;
 std::string WebServer::s_otaError = "";
 
+/**
+ * @brief Get singleton instance
+ * @return Reference to WebServer singleton (static local variable)
+ */
 WebServer &WebServer::instance() {
 	static WebServer server;
 	return server;
 }
 
+/**
+ * @brief Destructor - ensures server is stopped
+ * @details Calls stop() to clean up HTTP server resources
+ */
 WebServer::~WebServer() {
 	stop();
 }
 
+/**
+ * @brief Start HTTP server
+ * @return true if server started successfully
+ * @details Configures server with:
+ *          - Stack size: 12KB (increased for large HTML)
+ *          - Max URI handlers: 10 (for all API endpoints)
+ *          - LRU purge enabled
+ *          - Timeouts: 10 seconds
+ *          Registers all URI handlers for root, API, and OTA endpoints
+ */
 bool WebServer::start() {
 	if (m_server) {
 		ESP_LOGW(TAG, "Server already running");
@@ -98,6 +123,10 @@ bool WebServer::start() {
 	return true;
 }
 
+/**
+ * @brief Stop HTTP server
+ * @details Stops server and releases resources. Safe to call if not running.
+ */
 void WebServer::stop() {
 	if (!m_server) {
 		return;
@@ -108,6 +137,14 @@ void WebServer::stop() {
 	m_server = nullptr;
 }
 
+/**
+ * @brief Handle GET / - serve HTML configuration interface
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Sends index_html in small chunks (128 bytes) with 20ms delays
+ *          for WiFi/BLE coexistence. Implements retry logic (3 attempts)
+ *          for failed chunks. Logs progress and errors.
+ */
 esp_err_t WebServer::handleRoot(httpd_req_t *req) {
 	httpd_resp_set_type(req, "text/html");
 	httpd_resp_set_hdr(req, "Connection", "close");
@@ -160,16 +197,40 @@ esp_err_t WebServer::handleRoot(httpd_req_t *req) {
 	return ret;
 }
 
+/**
+ * @brief Handle GET /api/sensors - get current sensor data
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Calls getSensorsJSON() and sends JSON response
+ */
 esp_err_t WebServer::handleGetSensors(httpd_req_t *req) {
 	std::string json = getSensorsJSON();
 	return sendJSON(req, json.c_str());
 }
 
+/**
+ * @brief Handle GET /api/config - get current configuration
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Calls getConfigJSON() and sends JSON response
+ */
 esp_err_t WebServer::handleGetConfig(httpd_req_t *req) {
 	std::string json = getConfigJSON();
 	return sendJSON(req, json.c_str());
 }
 
+/**
+ * @brief Handle POST /api/config - update configuration
+ * @param req HTTP request (JSON body)
+ * @return ESP_OK on success
+ * @details Parses JSON (simple string search, not robust) and updates:
+ *          - front_address: Front sensor MAC address
+ *          - rear_address: Rear sensor MAC address
+ *          - front_ideal_psi: Target pressure for front tire
+ *          - rear_ideal_psi: Target pressure for rear tire
+ *          - pressure_unit: "PSI" or "BAR"
+ *          Saves all changes to NVS via ConfigManager
+ */
 esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	char content[512];
 	int ret = httpd_req_recv(req, content, sizeof(content) - 1);
@@ -237,7 +298,7 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 			std::string unit(ptr, end - ptr);
 			if (unit == "PSI" || unit == "BAR") {
 				config.setString("pressure_unit", unit);
-				State::getInstance().pressureUnit = unit;
+				State::getInstance().setPressureUnit(unit);
 				ESP_LOGI(TAG, "Set pressure_unit: %s", unit.c_str());
 			}
 		}
@@ -247,12 +308,25 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	return sendJSON(req, response);
 }
 
+/**
+ * @brief Handle POST /api/pair - start sensor pairing
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details TODO: Not yet implemented - placeholder for future pairing API
+ */
 esp_err_t WebServer::handlePairSensor(httpd_req_t *req) {
 	// TODO: Implement pairing logic
 	const char *response = "{\"status\":\"ok\"}";
 	return sendJSON(req, response);
 }
 
+/**
+ * @brief Handle POST /api/clear - clear sensor configuration
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Clears sensor addresses (front_address, rear_address) and
+ *          resets ideal PSI to defaults (36.0 front, 42.0 rear)
+ */
 esp_err_t WebServer::handleClearConfig(httpd_req_t *req) {
 	ESP_LOGI(TAG, "Clearing configuration");
 
@@ -273,6 +347,13 @@ esp_err_t WebServer::handleClearConfig(httpd_req_t *req) {
 	return sendJSON(req, response);
 }
 
+/**
+ * @brief Handle POST /api/restart - reboot device
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Clears wifi_config_mode flag (returns to normal mode),
+ *          sends response, waits 1 second, then calls esp_restart()
+ */
 esp_err_t WebServer::handleRestart(httpd_req_t *req) {
 	Application &app = Application::instance();
 	ConfigManager &config = app.getConfig();
@@ -291,13 +372,19 @@ esp_err_t WebServer::handleRestart(httpd_req_t *req) {
 	return ESP_OK;
 }
 
+/**
+ * @brief Build JSON string with all detected sensors
+ * @return JSON string
+ * @details Iterates State sensor map and formats as JSON array with:
+ *          address, pressure_psi, pressure_bar, temperature_c, battery_level
+ */
 std::string WebServer::getSensorsJSON() {
 	State &state = State::getInstance();
 
 	std::string json = "{\"sensors\":[";
 
 	bool first = true;
-	for (const auto &pair : state.data) {
+	for (const auto &pair : state.getData()) {
 		if (!first)
 			json += ",";
 		first = false;
@@ -315,6 +402,12 @@ std::string WebServer::getSensorsJSON() {
 	return json;
 }
 
+/**
+ * @brief Build JSON string with current configuration
+ * @return JSON string
+ * @details Reads State singleton and formats as JSON with:
+ *          front_address, rear_address, front_ideal_psi, rear_ideal_psi
+ */
 std::string WebServer::getConfigJSON() {
 	State &state = State::getInstance();
 
@@ -322,12 +415,20 @@ std::string WebServer::getConfigJSON() {
 	snprintf(json, sizeof(json),
 			 "{\"front_address\":\"%s\",\"rear_address\":\"%s\","
 			 "\"front_ideal_psi\":%.1f,\"rear_ideal_psi\":%.1f}",
-			 state.frontAddress.c_str(), state.rearAddress.c_str(),
-			 state.frontIdealPSI, state.rearIdealPSI);
+			 state.getFrontAddress().c_str(), state.getRearAddress().c_str(),
+			 state.getFrontIdealPSI(), state.getRearIdealPSI());
 
 	return std::string(json);
 }
 
+/**
+ * @brief Send JSON response with proper headers
+ * @param req HTTP request
+ * @param json JSON string to send
+ * @return ESP_OK on success
+ * @details Sets Content-Type to application/json, adds CORS header,
+ *          and sends response with full string length
+ */
 esp_err_t WebServer::sendJSON(httpd_req_t *req, const char *json) {
 	httpd_resp_set_type(req, "application/json");
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
@@ -335,6 +436,23 @@ esp_err_t WebServer::sendJSON(httpd_req_t *req, const char *json) {
 	return ESP_OK;
 }
 
+/**
+ * @brief Handle POST /api/ota/upload - upload firmware binary
+ * @param req HTTP request (binary body)
+ * @return ESP_OK on success
+ * @details OTA update process:
+ *          1. Find next OTA partition (esp_ota_get_next_update_partition)
+ *          2. Begin OTA operation (esp_ota_begin)
+ *          3. Receive firmware binary in 1KB chunks
+ *          4. Write chunks to OTA partition (esp_ota_write)
+ *          5. Update progress percentage (logged every 10%)
+ *          6. Finalize OTA (esp_ota_end)
+ *          7. Set new boot partition (esp_ota_set_boot_partition)
+ *          8. Send success response
+ *          9. Restart device after 2 seconds
+ *          
+ *          On error: Aborts OTA, sets error message, returns failure
+ */
 esp_err_t WebServer::handleOTAUpload(httpd_req_t *req) {
 	ESP_LOGI(TAG, "OTA upload started");
 	
@@ -436,6 +554,15 @@ esp_err_t WebServer::handleOTAUpload(httpd_req_t *req) {
 	return ESP_OK;
 }
 
+/**
+ * @brief Handle GET /api/ota/status - get OTA progress
+ * @param req HTTP request
+ * @return ESP_OK on success
+ * @details Returns JSON with:
+ *          - in_progress: boolean indicating if OTA is active
+ *          - progress: percentage (0-100)
+ *          - error: error message string (empty if no error)
+ */
 esp_err_t WebServer::handleOTAStatus(httpd_req_t *req) {
 	char json[256];
 	snprintf(json, sizeof(json),

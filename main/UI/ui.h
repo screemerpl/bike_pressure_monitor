@@ -32,16 +32,10 @@ extern "C" {
 
 extern lv_obj_t * ui____initial_actions0;
 
-// IMAGES AND IMAGE SETS
-LV_IMG_DECLARE(ui_img_942102620);    // assets/splashlogo-pms.png
-LV_IMG_DECLARE(ui_img_tpmsred_png);    // assets/tpmsred.png
-LV_IMG_DECLARE(ui_img_tpmsyellow_png);    // assets/tpmsyellow.png
-LV_IMG_DECLARE(ui_img_temp_png);    // assets/temp.png
-LV_IMG_DECLARE(ui_img_btoff_png);    // assets/BToff.png
-LV_IMG_DECLARE(ui_img_bton_png);    // assets/BTon.png
-LV_IMG_DECLARE(ui_img_idle_png);    // assets/idle.png
-LV_IMG_DECLARE(ui_img_alert_png);    // assets/alert.png
-LV_IMG_DECLARE(ui_img_tpmsblack_png);    // assets/tpmsblack.png
+// IMAGES - Loaded from SPIFFS filesystem instead of embedded C arrays
+// Image paths: S:/splashlogo-pms.png, S:/tpmsred.png, S:/tpmsyellow.png,
+//              S:/temp.png, S:/BToff.png, S:/BTon.png, S:/idle.png,
+//              S:/alert.png, S:/tpmsblack.png
 
 // UI INIT
 void ui_init(void);

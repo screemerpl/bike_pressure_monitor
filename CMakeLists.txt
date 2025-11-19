@@ -26,3 +26,6 @@ message(STATUS "Build version: ${GIT_VERSION}")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(bike_pressure_monitor)
 
+# Create SPIFFS image from spiffs_data directory
+spiffs_create_partition_image(storage spiffs_data FLASH_IN_PROJECT)
+

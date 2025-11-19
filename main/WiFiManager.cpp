@@ -1,3 +1,10 @@
+/**
+ * @file WiFiManager.cpp
+ * @brief WiFi AP implementation
+ * @details Implements WiFi Access Point for device configuration.
+ *          Provides web interface access via "TPMS-Config" SSID.
+ */
+
 #include "WiFiManager.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -8,15 +15,33 @@
 
 static const char *TAG = "WiFiManager";
 
+/**
+ * @brief Get singleton instance
+ * @return Reference to WiFiManager singleton (static local variable)
+ */
 WiFiManager &WiFiManager::instance() {
 	static WiFiManager manager;
 	return manager;
 }
 
+/**
+ * @brief Destructor - ensures WiFi is stopped
+ * @details Calls stop() to clean up WiFi resources
+ */
 WiFiManager::~WiFiManager() {
 	stop();
 }
 
+/**
+ * @brief Initialize WiFi subsystem
+ * @return true if initialization succeeded
+ * @details Steps:
+ *          1. Initialize TCP/IP stack (esp_netif_init)
+ *          2. Create default event loop (if not exists)
+ *          3. Create WiFi AP network interface
+ *          4. Initialize WiFi driver with default config
+ *          5. Register WiFi event handlers
+ */
 bool WiFiManager::init() {
 	ESP_LOGI(TAG, "Initializing WiFi Manager");
 
@@ -53,6 +78,17 @@ bool WiFiManager::init() {
 	return true;
 }
 
+/**
+ * @brief Start WiFi Access Point
+ * @return true if AP started successfully
+ * @details Configures AP with:
+ *          - SSID: "TPMS-Config"
+ *          - Password: "tpms1234"
+ *          - Channel: 1
+ *          - Max connections: 4
+ *          - Auth: WPA2-PSK (or OPEN if password is empty)
+ *          Logs SSID, password, and IP address after successful start
+ */
 bool WiFiManager::start() {
 	ESP_LOGI(TAG, "Starting WiFi AP: %s", WIFI_SSID);
 
@@ -90,6 +126,11 @@ bool WiFiManager::start() {
 	return true;
 }
 
+/**
+ * @brief Stop WiFi Access Point
+ * @details Stops WiFi driver and deinitializes WiFi.
+ *          Safe to call even if AP is not running.
+ */
 void WiFiManager::stop() {
 	if (!m_isRunning) {
 		return;
@@ -103,6 +144,11 @@ void WiFiManager::stop() {
 	m_isRunning = false;
 }
 
+/**
+ * @brief Get AP IP address
+ * @return IP address string (e.g., "192.168.4.1") or "0.0.0.0" if netif not initialized
+ * @details Retrieves IP info from esp_netif and formats as string
+ */
 std::string WiFiManager::getIPAddress() const {
 	if (!m_netif) {
 		return "0.0.0.0";
@@ -117,6 +163,16 @@ std::string WiFiManager::getIPAddress() const {
 	return std::string(ip_str);
 }
 
+/**
+ * @brief WiFi event handler
+ * @param arg User context (WiFiManager instance)
+ * @param event_base Event base (WIFI_EVENT)
+ * @param event_id Event ID
+ * @param event_data Event-specific data
+ * @details Handles:
+ *          - WIFI_EVENT_AP_STACONNECTED: Logs client MAC and AID
+ *          - WIFI_EVENT_AP_STADISCONNECTED: Logs client disconnect
+ */
 void WiFiManager::wifiEventHandler(void *arg, esp_event_base_t event_base,
 								   int32_t event_id, void *event_data) {
 	if (event_base == WIFI_EVENT) {

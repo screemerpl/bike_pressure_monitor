@@ -1,3 +1,29 @@
+/**
+ * @file index_html.h
+ * @brief Embedded HTML configuration interface
+ * @details Contains complete HTML/CSS/JavaScript for web configuration portal.
+ *          Provides UI for:
+ *          - Viewing detected TPMS sensors in real-time
+ *          - Configuring sensor addresses (front/rear)
+ *          - Setting ideal tire pressures (PSI)
+ *          - Selecting pressure unit (PSI/BAR)
+ *          - Clearing configuration
+ *          - OTA firmware upload with progress bar
+ *          - Device restart
+ *          
+ *          Served by WebServer::handleRoot() at GET /
+ *          Uses REST API endpoints:
+ *          - GET /api/sensors - Refresh sensor list
+ *          - GET /api/config - Load current config
+ *          - POST /api/config - Save configuration
+ *          - POST /api/clear - Clear sensor pairing
+ *          - POST /api/ota/upload - Upload firmware
+ *          - GET /api/ota/status - Check OTA progress
+ *          - POST /api/restart - Reboot device
+ *          
+ *          Design: Dark theme, responsive, motorcycle-themed (🏍️ icon)
+ */
+
 #pragma once
 
 static const char *index_html = R"HTML(
