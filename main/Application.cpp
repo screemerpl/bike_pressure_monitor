@@ -56,7 +56,7 @@ Application &Application::instance() {
 void Application::init() {
 	// Set default log level for all components
 	esp_log_level_set("*", ESP_LOG_WARN);
-	ESP_LOGI(TAG, "Initializing application...");
+	esp_log_level_set("lv", ESP_LOG_WARN);
 
 	// Initialize SPIFFS for UI assets (PNG images)
 	SPIFFSManager::instance().init();
@@ -66,9 +66,6 @@ void Application::init() {
 	
 	// Check if we should boot into WiFi configuration mode
 	m_wifiConfigMode = isWiFiConfigMode();
-	if (m_wifiConfigMode) {
-		ESP_LOGI(TAG, "Starting in WiFi CONFIG MODE");
-	}
 	
 	// Initialize LCD display and UI controllers
 	initializeDisplay();
@@ -88,8 +85,6 @@ void Application::init() {
 		// WiFi config mode: Start AP and web server for OTA/config
 		startConfigServer();
 	}
-
-	ESP_LOGI(TAG, "Application initialized successfully");
 }
 
 /**
@@ -106,7 +101,6 @@ void Application::loadConfiguration() {
 
 	// Initialize ConfigManager and load JSON from NVS
 	m_config.init();
-	ESP_LOGI(TAG, "Loaded JSON Config: %s", m_config.getJsonString().c_str());
 
 	// Load sensor MAC addresses
 	std::string frontAddr, rearAddr;
@@ -114,9 +108,6 @@ void Application::loadConfiguration() {
 	m_config.getString("rear_address", rearAddr, "");
 	state.setFrontAddress(frontAddr);
 	state.setRearAddress(rearAddr);
-
-	ESP_LOGI(TAG, "Loaded sensor addresses: Front=%s, Rear=%s",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str());
 
 	// Load ideal pressure values with defaults
 	float frontPSI, rearPSI;
@@ -140,9 +131,6 @@ void Application::loadConfiguration() {
 
 	// Update pairing status based on whether both addresses are configured
 	state.setIsPaired(!state.getFrontAddress().empty() && !state.getRearAddress().empty());
-
-	ESP_LOGI(TAG, "Sensors: Front=%s, Rear=%s, Paired=%d",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str(), state.getIsPaired());
 }
 
 /**
@@ -171,8 +159,6 @@ void Application::initializeDisplay() {
 
 	// Apply saved brightness setting from configuration
 	m_display->setBacklightBrightness(BRIGHTNESS_LEVELS[m_currentBrightnessIndex]);
-	ESP_LOGI(TAG, "Display brightness: %d%% (index %d)",
-		   BRIGHTNESS_LEVELS[m_currentBrightnessIndex], m_currentBrightnessIndex);
 }
 
 /**
@@ -214,8 +200,6 @@ void Application::run() {
  *          - Continuous scanning mode
  */
 void Application::initBLE() {
-	ESP_LOGI(TAG, "Initializing BLE...");
-
 	// Initialize NimBLE stack
 	NimBLEDevice::init("");
 	NimBLEScan *pBLEScan = NimBLEDevice::getScan();
@@ -231,8 +215,6 @@ void Application::initBLE() {
 	
 	// Start continuous scanning
 	pBLEScan->start(BLE_SCAN_TIME_MS, false, true);
-
-	ESP_LOGI(TAG, "BLE scanning started (active mode with WiFi coexistence)");
 }
 
 /**
@@ -345,22 +327,18 @@ void Application::handleScreenTransitions(uint32_t elapsed, bool &splashShown,
 	if (elapsed >= SPLASH_SCREEN_DELAY_MS && !splashShown) {
 		lv_async_call(showSplashScreenCallback, nullptr);
 		splashShown = true;
-		ESP_LOGI(TAG, "Showing splash screen");
 	} 
 	// Step 2: Show main/pair screen after 4.5 seconds
 	else if (elapsed >= MAIN_SCREEN_DELAY_MS && !mainShown) {
 		if (state.getIsPaired()) {
 			// Sensors are paired: Show main screen with sensor data
 			lv_async_call(initializeLabelsCallback, nullptr);
-			ESP_LOGD(TAG, "Labels initialized");
 			vTaskDelay(pdMS_TO_TICKS(LABEL_INIT_DELAY_MS));
 			lv_async_call(showMainScreenCallback, nullptr);
-			ESP_LOGI(TAG, "Showing main screen");
 		} else {
 			// Sensors not paired: Show pairing workflow screen
 			lv_async_call(showPairScreenCallback, nullptr);
 			m_pairController->init();
-			ESP_LOGI(TAG, "Showing pair screen - not paired");
 		}
 		mainShown = true;
 	}
@@ -389,7 +367,6 @@ void Application::handleButtonInput(ButtonState &state) {
 	if (state.lastState && !currentButtonState) {
 		state.pressStartTime = currentTime;
 		state.pressHandled = false;
-		ESP_LOGD(TAG, "Button pressed");
 	} 
 	// Button held down - check duration for long/very long press
 	else if (!currentButtonState && !state.pressHandled) {
@@ -436,8 +413,6 @@ void Application::handleButtonInput(ButtonState &state) {
  *          to restart the pairing process from scratch
  */
 void Application::handleLongPress() {
-	ESP_LOGI(TAG, "Long press detected - clearing sensor addresses and rebooting...");
-	
 	// Clear sensor addresses from configuration
 	m_config.setString("front_address", "");
 	m_config.setString("rear_address", "");
@@ -454,7 +429,6 @@ void Application::handleLongPress() {
  * @details Enters WiFi configuration mode for OTA updates and remote configuration
  */
 void Application::handleVeryLongPress() {
-	ESP_LOGI(TAG, "Very long press detected - entering WiFi config mode...");
 	enterWiFiConfigMode();
 }
 
@@ -490,8 +464,6 @@ void Application::cycleBrightness() {
 	
 	// Save brightness preference to NVS
 	m_config.setInt("brightness_index", m_currentBrightnessIndex);
-	
-	ESP_LOGI(TAG, "Brightness set to %d%%", brightness);
 }
 
 /**
@@ -618,7 +590,6 @@ bool Application::isWiFiConfigMode() {
  *          into AP mode with web server for OTA updates
  */
 void Application::enterWiFiConfigMode() {
-	ESP_LOGI(TAG, "Entering WiFi config mode...");
 	m_config.setInt("wifi_config_mode", 1);
 	vTaskDelay(pdMS_TO_TICKS(500));
 	esp_restart();
@@ -630,7 +601,6 @@ void Application::enterWiFiConfigMode() {
  *          back to normal TPMS monitoring mode
  */
 void Application::exitWiFiConfigMode() {
-	ESP_LOGI(TAG, "Exiting WiFi config mode...");
 	m_config.setInt("wifi_config_mode", 0);
 	vTaskDelay(pdMS_TO_TICKS(500));
 	esp_restart();
@@ -645,28 +615,20 @@ void Application::exitWiFiConfigMode() {
  * If initialization fails, cleans up and returns without crashing
  */
 void Application::startConfigServer() {
-	ESP_LOGI(TAG, "Starting WiFi config server...");
-
 	// Initialize and start WiFi Access Point
 	WiFiManager &wifi = WiFiManager::instance();
 	if (!wifi.init()) {
-		ESP_LOGE(TAG, "Failed to initialize WiFi");
 		return;
 	}
 
 	if (!wifi.start()) {
-		ESP_LOGE(TAG, "Failed to start WiFi AP");
 		return;
 	}
 
 	// Start HTTP web server
 	WebServer &web = WebServer::instance();
 	if (!web.start()) {
-		ESP_LOGE(TAG, "Failed to start web server");
 		wifi.stop();  // Clean up WiFi if server fails
 		return;
 	}
-
-	ESP_LOGI(TAG, "Config server running - WiFi: TPMS-Config, IP: %s",
-		   wifi.getIPAddress().c_str());
 }

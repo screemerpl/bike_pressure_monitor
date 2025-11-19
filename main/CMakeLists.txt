@@ -1,8 +1,8 @@
 # Automatically find all UI sources (SquareLine Studio generated)
-# Exclude images/ directory - now using PNG from SPIFFS instead of C arrays
 file(GLOB_RECURSE UI_SOURCES 
     "UI/components/*.c"
     "UI/screens/*.c"
+    "UI/images/*.c"
     "UI/ui.c"
     "UI/ui_helpers.c")
 

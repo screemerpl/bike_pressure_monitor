@@ -197,7 +197,7 @@ void ui_Main_screen_init(void)
     lv_label_set_text(ui_Label8, "80%");
 
     ui_Image1 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image1, "S:/tpmsred.png");
+    lv_image_set_src(ui_Image1, "P:tpmsred.png");
     lv_obj_set_width(ui_Image1, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image1, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image1, 58);
@@ -208,7 +208,7 @@ void ui_Main_screen_init(void)
     lv_image_set_scale(ui_Image1, 220);
 
     ui_Image3 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image3, "S:/tpmsyellow.png");
+    lv_image_set_src(ui_Image3, "P:tpmsyellow.png");
     lv_obj_set_width(ui_Image3, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image3, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image3, 58);
@@ -219,7 +219,7 @@ void ui_Main_screen_init(void)
     lv_image_set_scale(ui_Image3, 220);
 
     ui_Image4 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image4, "S:/temp.png");
+    lv_image_set_src(ui_Image4, "P:temp.png");
     lv_obj_set_width(ui_Image4, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image4, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image4, -36);
@@ -230,7 +230,7 @@ void ui_Main_screen_init(void)
     lv_image_set_rotation(ui_Image4, 4);
 
     ui_Image5 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image5, "S:/temp.png");
+    lv_image_set_src(ui_Image5, "P:temp.png");
     lv_obj_set_width(ui_Image5, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image5, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image5, -36);
@@ -240,7 +240,7 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Image5, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image6 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image6, "S:/BToff.png");
+    lv_image_set_src(ui_Image6, "P:BToff.png");
     lv_obj_set_width(ui_Image6, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image6, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image6, -58);
@@ -250,7 +250,7 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Image6, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image7 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image7, "S:/BTon.png");
+    lv_image_set_src(ui_Image7, "P:BTon.png");
     lv_obj_set_width(ui_Image7, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image7, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image7, -58);
@@ -260,7 +260,7 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Image7, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image8 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image8, "S:/idle.png");
+    lv_image_set_src(ui_Image8, "P:idle.png");
     lv_obj_set_width(ui_Image8, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image8, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image8, -93);
@@ -270,7 +270,7 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Image8, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image9 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image9, "S:/alert.png");
+    lv_image_set_src(ui_Image9, "P:alert.png");
     lv_obj_set_width(ui_Image9, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image9, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image9, 93);
@@ -280,7 +280,7 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Image9, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image10 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Image10, "S:/tpmsblack.png");
+    lv_image_set_src(ui_Image10, "P:tpmsblack.png");
     lv_obj_set_width(ui_Image10, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image10, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image10, 55);

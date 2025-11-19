@@ -3,7 +3,11 @@
 // LVGL version: 9.2.2
 // Project name: SquareLine_Project
 
+#include <stdio.h>
 #include "../ui.h"
+
+// Embedded splash logo (C array instead of PNG to save RAM)
+LV_IMAGE_DECLARE(ui_img_splashlogo);
 
 lv_obj_t * uic_Spinner3;
 lv_obj_t * uic_Splash;
@@ -36,7 +40,7 @@ void ui_Splash_screen_init(void)
     lv_obj_set_style_text_align(ui_Label2, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Image2 = lv_image_create(ui_Splash);
-    lv_image_set_src(ui_Image2, "S:/splashlogo-pms.png");
+    lv_image_set_src(ui_Image2, &ui_img_splashlogo);  // Use embedded C array
     lv_obj_set_width(ui_Image2, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Image2, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Image2, 0);
