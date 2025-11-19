@@ -150,12 +150,12 @@ void UIController::initializeLabels() {
 	lv_label_set_text(ui_Label8, "--%");
 	lv_arc_set_value(ui_Arc1, 0);
 	lv_arc_set_value(ui_Arc2, 0);
-	lv_image_set_src(ui_Image1, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_Image3, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_Image6, &ui_img_btoff_png);
-	lv_image_set_src(ui_Image7, &ui_img_btoff_png);
-	lv_image_set_src(ui_Image9, &ui_img_idle_png);
-	lv_image_set_src(ui_Image10, &ui_img_idle_png);
+	lv_image_set_src(ui_Image1, "P:tpmsblack.png");
+	lv_image_set_src(ui_Image3, "P:tpmsblack.png");
+	lv_image_set_src(ui_Image6, "P:BToff.png");
+	lv_image_set_src(ui_Image7, "P:BToff.png");
+	lv_image_set_src(ui_Image9, "P:idle.png");
+	lv_image_set_src(ui_Image10, "P:idle.png");
 }
 
 /**
@@ -250,18 +250,18 @@ void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
 
 	// Update pressure indicator icon
 	if (frontSensor->pressurePSI < frontIdealPSI * 0.75f) {
-		lv_image_set_src(ui_Image1, &ui_img_tpmsred_png);
+		lv_image_set_src(ui_Image1, "P:tpmsred.png");
 	} else if (frontSensor->pressurePSI < frontIdealPSI * 0.9f) {
-		lv_image_set_src(ui_Image1, &ui_img_tpmsyellow_png);
+		lv_image_set_src(ui_Image1, "P:tpmsyellow.png");
 	} else {
-		lv_image_set_src(ui_Image1, &ui_img_tpmsblack_png);
+		lv_image_set_src(ui_Image1, "P:tpmsblack.png");
 	}
 
 	// Update BLE connection status icon
 	if (frontSensor->timestamp + 200 < currentTime) {
-		lv_image_set_src(ui_Image6, &ui_img_btoff_png);
+		lv_image_set_src(ui_Image6, "P:BToff.png");
 	} else {
-		lv_image_set_src(ui_Image6, &ui_img_bton_png);
+		lv_image_set_src(ui_Image6, "P:BTon.png");
 	}
 }
 
@@ -314,18 +314,18 @@ void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
 
 	// Update pressure indicator icon
 	if (rearSensor->pressurePSI < rearIdealPSI * 0.75f) {
-		lv_image_set_src(ui_Image3, &ui_img_tpmsred_png);
+		lv_image_set_src(ui_Image3, "P:tpmsred.png");
 	} else if (rearSensor->pressurePSI < rearIdealPSI * 0.9f) {
-		lv_image_set_src(ui_Image3, &ui_img_tpmsyellow_png);
+		lv_image_set_src(ui_Image3, "P:tpmsyellow.png");
 	} else {
-		lv_image_set_src(ui_Image3, &ui_img_tpmsblack_png);
+		lv_image_set_src(ui_Image3, "P:tpmsblack.png");
 	}
 
 	// Update BLE connection status icon
 	if (rearSensor->timestamp + 200 < currentTime) {
-		lv_image_set_src(ui_Image7, &ui_img_btoff_png);
+		lv_image_set_src(ui_Image7, "P:BToff.png");
 	} else {
-		lv_image_set_src(ui_Image7, &ui_img_bton_png);
+		lv_image_set_src(ui_Image7, "P:BTon.png");
 	}
 }
 
@@ -358,8 +358,8 @@ void UIController::clearFrontSensorUI(bool applyBlink) {
 	lv_label_set_text(ui_Label7, "--%");
 	lv_arc_set_value(ui_Arc2, 0);
 	lv_bar_set_value(ui_Bar1, -10, LV_ANIM_ON);
-	lv_image_set_src(ui_Image1, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_Image6, &ui_img_btoff_png);
+	lv_image_set_src(ui_Image1, "P:tpmsblack.png");
+	lv_image_set_src(ui_Image6, "P:BToff.png");
 }
 
 /**
@@ -390,8 +390,8 @@ void UIController::clearRearSensorUI(bool applyBlink) {
 	lv_label_set_text(ui_Label8, "--%");
 	lv_arc_set_value(ui_Arc1, 0);
 	lv_bar_set_value(ui_Bar2, -10, LV_ANIM_ON);
-	lv_image_set_src(ui_Image3, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_Image7, &ui_img_btoff_png);
+	lv_image_set_src(ui_Image3, "P:tpmsblack.png");
+	lv_image_set_src(ui_Image7, "P:BToff.png");
 }
 
 /**
@@ -405,16 +405,16 @@ void UIController::updateAlertIcons(bool alertFront, bool alertRear) {
 	if (alertFront || alertRear) {
 		// Blink: show alert when blink state is true, hide when false
 		if (m_alertBlinkState) {
-			lv_image_set_src(ui_Image8, &ui_img_alert_png);
-			lv_image_set_src(ui_Image9, &ui_img_alert_png);
+			lv_image_set_src(ui_Image8, "P:alert.png");
+			lv_image_set_src(ui_Image9, "P:alert.png");
 		} else {
-			lv_image_set_src(ui_Image8, &ui_img_idle_png);
-			lv_image_set_src(ui_Image9, &ui_img_idle_png);
+			lv_image_set_src(ui_Image8, "P:idle.png");
+			lv_image_set_src(ui_Image9, "P:idle.png");
 		}
 	} else {
 		// No alert - show idle
-		lv_image_set_src(ui_Image8, &ui_img_idle_png);
-		lv_image_set_src(ui_Image9, &ui_img_idle_png);
+		lv_image_set_src(ui_Image8, "P:idle.png");
+		lv_image_set_src(ui_Image9, "P:idle.png");
 	}
 }
 
