@@ -13,6 +13,7 @@ public:
 
 	// Screen transitions
 	void setVersionLabel();
+	void setWiFiModeLabel();
 	void showSplashScreen();
 	void showMainScreen();
 	void showPairScreen();

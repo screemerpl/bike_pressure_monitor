@@ -58,9 +58,15 @@ private:
 
 	void handleButtonInput(ButtonState &state);
 	void handleLongPress();
+	void handleVeryLongPress();
 	void handleShortPress();
 	void cycleBrightness();
 	void updateUIIfPaired();
+	
+	// WiFi config mode helpers
+	bool isWiFiConfigMode();
+	void enterWiFiConfigMode();
+	void exitWiFiConfigMode();
 
 	// LVGL async callbacks
 	static void setVersionLabelCallback(void *arg);
@@ -83,4 +89,5 @@ private:
 
 	static constexpr uint8_t BRIGHTNESS_LEVELS[5] = {10, 30, 50, 75, 100};
 	uint8_t m_currentBrightnessIndex = 4;
+	bool m_wifiConfigMode = false;
 };

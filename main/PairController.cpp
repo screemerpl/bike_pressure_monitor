@@ -21,6 +21,7 @@ void PairController::init() {
 	m_selectedFrontAddress.clear();
 	m_selectedRearAddress.clear();
 	m_pairingComplete = false;
+	m_scanStartTime = 0;  // Will be set when user presses button to start
 	
 	// Stop WiFi and WebServer during pairing for better BLE performance
 	printf("PairController: Stopping WiFi for better BLE scanning\n");
@@ -36,7 +37,13 @@ void PairController::init() {
 	pBLEScan->start(0, false, false);
 	printf("PairController: Switched to active BLE scan\n");
 	
-	startFrontScan();
+	// Show initial UI - waiting for button press to start
+	lv_label_set_text(ui_Label10, "-FRONT WHEEL-");
+	lv_label_set_text(ui_Label11, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);
+	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Label12, "---");
 }
 
 void PairController::startFrontScan() {
@@ -48,9 +55,11 @@ void PairController::startFrontScan() {
 	
 	// Update UI
 	lv_label_set_text(ui_Label10, "-FRONT WHEEL-");
-	lv_label_set_text(ui_Label11, "NOT YET FOUND");
-	lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Label11, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);
+	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Label12, "60s");
 }
 
 void PairController::startRearScan() {
@@ -62,9 +71,11 @@ void PairController::startRearScan() {
 	
 	// Update UI
 	lv_label_set_text(ui_Label10, "-REAR WHEEL-");
-	lv_label_set_text(ui_Label11, "NOT YET FOUND");
-	lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Label11, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);
+	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Label12, "60s");
 }
 
 void PairController::update(uint32_t currentTime) {
@@ -75,8 +86,8 @@ void PairController::update(uint32_t currentTime) {
 	// Check for new sensors
 	checkForNewSensor();
 
-	// Update timeout counter
-	if (m_state == PairingState::SCANNING_FRONT || m_state == PairingState::SCANNING_REAR) {
+	// Update timeout counter (only if scan has started)
+	if ((m_state == PairingState::SCANNING_FRONT || m_state == PairingState::SCANNING_REAR) && m_scanStartTime > 0) {
 		uint32_t elapsed = currentTime - m_scanStartTime;
 		uint32_t remaining = (SCAN_TIMEOUT_MS - elapsed) / 1000;
 		
@@ -85,13 +96,19 @@ void PairController::update(uint32_t currentTime) {
 			snprintf(timeoutText, sizeof(timeoutText), "%lus", remaining);
 			lv_label_set_text(ui_Label12, timeoutText);
 		} else {
-			// Timeout - restart scan
-			printf("PairController: Scan timeout, restarting\n");
+			// Timeout - show message and wait for button press
+			printf("PairController: Scan timeout\n");
 			if (m_state == PairingState::SCANNING_FRONT) {
-				startFrontScan();
+				m_state = PairingState::TIMEOUT_FRONT;
 			} else {
-				startRearScan();
+				m_state = PairingState::TIMEOUT_REAR;
 			}
+			lv_label_set_text(ui_Label11, "TIMEOUT");
+			lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);
+			lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+			lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+			lv_label_set_text(ui_Label12, "0s");
+			m_scanStartTime = 0;  // Reset for next attempt
 		}
 	}
 }
@@ -138,12 +155,14 @@ void PairController::updateUI() {
 	if (m_state == PairingState::WAITING_FRONT_CONFIRM) {
 		// Show front sensor address
 		lv_label_set_text(ui_Label11, m_selectedFrontAddress.c_str());
+		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0x00FF00), LV_PART_MAIN);
 		lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
 		lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
 		lv_label_set_text(ui_Label12, "---");
 	} else if (m_state == PairingState::WAITING_REAR_CONFIRM) {
 		// Show rear sensor address
 		lv_label_set_text(ui_Label11, m_selectedRearAddress.c_str());
+		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0x00FF00), LV_PART_MAIN);
 		lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
 		lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
 		lv_label_set_text(ui_Label12, "---");
@@ -153,7 +172,25 @@ void PairController::updateUI() {
 void PairController::handleButtonPress() {
 	printf("PairController: Button pressed in state %d\n", static_cast<int>(m_state));
 
-	if (m_state == PairingState::WAITING_FRONT_CONFIRM) {
+	if (m_state == PairingState::SCANNING_FRONT || m_state == PairingState::TIMEOUT_FRONT) {
+		// Start or retry front scan
+		printf("PairController: Starting/retrying front sensor scan\n");
+		lv_label_set_text(ui_Label11, "SCANNING...");
+		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+		lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+		m_state = PairingState::SCANNING_FRONT;
+		m_scanStartTime = esp_timer_get_time() / 1000;
+	} else if (m_state == PairingState::SCANNING_REAR || m_state == PairingState::TIMEOUT_REAR) {
+		// Start or retry rear scan
+		printf("PairController: Starting/retrying rear sensor scan\n");
+		lv_label_set_text(ui_Label11, "SCANNING...");
+		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+		lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+		m_state = PairingState::SCANNING_REAR;
+		m_scanStartTime = esp_timer_get_time() / 1000;
+	} else if (m_state == PairingState::WAITING_FRONT_CONFIRM) {
 		// Front confirmed, start rear scan
 		printf("PairController: Front sensor confirmed, scanning rear\n");
 		startRearScan();

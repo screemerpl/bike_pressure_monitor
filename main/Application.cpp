@@ -13,6 +13,7 @@ static constexpr uint32_t SPLASH_SCREEN_DELAY_MS = 1000;
 static constexpr uint32_t MAIN_SCREEN_DELAY_MS = 4500;
 static constexpr uint32_t LABEL_INIT_DELAY_MS = 50;
 static constexpr uint32_t LONG_PRESS_DURATION_MS = 2000;
+static constexpr uint32_t VERY_LONG_PRESS_DURATION_MS = 15000;
 static constexpr uint32_t CONTROL_LOOP_DELAY_MS = 100;
 static constexpr uint32_t BLE_SCAN_TIME_MS = 1000;
 
@@ -32,11 +33,27 @@ void Application::init() {
 	printf("Initializing application...\n");
 
 	loadConfiguration();
+	
+	// Check if in WiFi config mode
+	m_wifiConfigMode = isWiFiConfigMode();
+	if (m_wifiConfigMode) {
+		printf("Starting in WiFi CONFIG MODE\n");
+	}
+	
 	initializeDisplay();
 	recordStartTime();
-	initBLE();
+	
+	if (!m_wifiConfigMode) {
+		// Normal mode - initialize BLE
+		initBLE();
+	}
+	
 	startUISystem();
-	startConfigServer();
+	
+	if (m_wifiConfigMode) {
+		// WiFi config mode - start web server
+		startConfigServer();
+	}
 
 	printf("Application initialized successfully\n");
 }
@@ -83,8 +100,12 @@ void Application::initializeDisplay() {
 	m_uiController = &UIController::instance();
 	m_pairController = &PairController::instance();
 
-	// Set version label before any screen transitions
-	m_uiController->setVersionLabel();
+	// Set version or WiFi mode label before any screen transitions
+	if (m_wifiConfigMode) {
+		m_uiController->setWiFiModeLabel();
+	} else {
+		m_uiController->setVersionLabel();
+	}
 
 	// Apply saved brightness setting
 	m_display->setBacklightBrightness(BRIGHTNESS_LEVELS[m_currentBrightnessIndex]);
@@ -139,22 +160,33 @@ void Application::controlLogicTask() {
 		uint32_t elapsed = getElapsedTime();
 		uint32_t currentTime = esp_timer_get_time() / 1000;
 
-		handleScreenTransitions(elapsed, splashShown, mainShown);
+		// In WiFi config mode, stay on splash screen and only handle button input
+		if (m_wifiConfigMode) {
+			if (elapsed >= SPLASH_SCREEN_DELAY_MS && !splashShown) {
+				lv_async_call(showSplashScreenCallback, nullptr);
+				splashShown = true;
+				printf("Showing splash screen (WiFi config mode)\\n");
+			}
+			handleButtonInput(buttonState);
+		} else {
+			// Normal mode operation
+			handleScreenTransitions(elapsed, splashShown, mainShown);
 
-		if (mainShown) {
-			State &state = State::getInstance();
-			
-			if (!state.isPaired) {
-				// In pairing mode
-				if (!inPairingMode) {
-					inPairingMode = true;
+			if (mainShown) {
+				State &state = State::getInstance();
+				
+				if (!state.isPaired) {
+					// In pairing mode
+					if (!inPairingMode) {
+						inPairingMode = true;
+					}
+					m_pairController->update(currentTime);
+					handleButtonInput(buttonState);
+				} else {
+					// Normal operation
+					handleButtonInput(buttonState);
+					updateUIIfPaired();
 				}
-				m_pairController->update(currentTime);
-				handleButtonInput(buttonState);
-			} else {
-				// Normal operation
-				handleButtonInput(buttonState);
-				updateUIIfPaired();
 			}
 		}
 
@@ -214,15 +246,34 @@ void Application::handleButtonInput(ButtonState &state) {
 	} else if (!currentButtonState && !state.pressHandled) {
 		// Button held down
 		uint32_t pressDuration = currentTime - state.pressStartTime;
-		if (pressDuration >= LONG_PRESS_DURATION_MS) {
-			handleLongPress();
-			state.pressHandled = true;
+		
+		if (m_wifiConfigMode) {
+			// In WiFi mode - any long press exits
+			if (pressDuration >= LONG_PRESS_DURATION_MS) {
+				exitWiFiConfigMode();
+				state.pressHandled = true;
+			}
+		} else {
+			// Normal mode - check for very long press first, then long press
+			if (pressDuration >= VERY_LONG_PRESS_DURATION_MS) {
+				handleVeryLongPress();
+				state.pressHandled = true;
+			} else if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
+				// Don't handle long press yet if we might be going for very long press
+				// Wait to see if button is released
+			}
 		}
 	} else if (!state.lastState && currentButtonState) {
 		// Button released
 		uint32_t pressDuration = currentTime - state.pressStartTime;
-		if (!state.pressHandled && pressDuration < LONG_PRESS_DURATION_MS) {
-			handleShortPress();
+		if (!state.pressHandled) {
+			if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
+				// Released after long press but before very long press
+				handleLongPress();
+			} else if (pressDuration < LONG_PRESS_DURATION_MS) {
+				// Short press
+				handleShortPress();
+			}
 		}
 		state.pressHandled = false;
 	}
@@ -242,6 +293,11 @@ void Application::handleLongPress() {
 	
 	// Reboot the device
 	esp_restart();
+}
+
+void Application::handleVeryLongPress() {
+	printf("Very long press detected - entering WiFi config mode...\n");
+	enterWiFiConfigMode();
 }
 
 void Application::handleShortPress() {
@@ -326,6 +382,26 @@ void Application::updateLabelsCallback(void *arg) {
 
 void Application::controlLogicTaskWrapper(void *pvParameter) {
 	static_cast<Application *>(pvParameter)->controlLogicTask();
+}
+
+bool Application::isWiFiConfigMode() {
+	int wifiMode = 0;
+	m_config.getInt("wifi_config_mode", wifiMode, 0);
+	return wifiMode == 1;
+}
+
+void Application::enterWiFiConfigMode() {
+	printf("Entering WiFi config mode...\\n");
+	m_config.setInt("wifi_config_mode", 1);
+	vTaskDelay(pdMS_TO_TICKS(500));
+	esp_restart();
+}
+
+void Application::exitWiFiConfigMode() {
+	printf("Exiting WiFi config mode...\\n");
+	m_config.setInt("wifi_config_mode", 0);
+	vTaskDelay(pdMS_TO_TICKS(500));
+	esp_restart();
 }
 
 void Application::startConfigServer() {

@@ -274,6 +274,13 @@ esp_err_t WebServer::handleClearConfig(httpd_req_t *req) {
 }
 
 esp_err_t WebServer::handleRestart(httpd_req_t *req) {
+	Application &app = Application::instance();
+	ConfigManager &config = app.getConfig();
+	
+	// Clear WiFi config mode flag to return to normal operation
+	config.setInt("wifi_config_mode", 0);
+	ESP_LOGI(TAG, "Cleared WiFi config mode flag - will restart in normal mode");
+	
 	const char *response = "{\"status\":\"restarting\"}";
 	sendJSON(req, response);
 
@@ -309,7 +316,6 @@ std::string WebServer::getSensorsJSON() {
 }
 
 std::string WebServer::getConfigJSON() {
-	Application &app = Application::instance();
 	State &state = State::getInstance();
 
 	char json[512];

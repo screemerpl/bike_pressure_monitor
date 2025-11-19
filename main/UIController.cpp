@@ -53,8 +53,12 @@ void UIController::lvglTimerTaskWrapper(void *pvParameter) {
 
 void UIController::setVersionLabel() {
 	char versionText[32];
-	snprintf(versionText, sizeof(versionText), "%s", Application::appVersion);
+	snprintf(versionText, sizeof(versionText), "V:%s", Application::appVersion);
 	lv_label_set_text(ui_Label2, versionText);
+}
+
+void UIController::setWiFiModeLabel() {
+	lv_label_set_text(ui_Label2, "WIFI MODE");
 }
 
 void UIController::showSplashScreen() {
