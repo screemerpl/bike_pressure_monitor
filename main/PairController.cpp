@@ -191,13 +191,13 @@ void PairController::savePairingAndReboot() {
 	lv_label_set_text(ui_Label11, "PAIRING COMPLETE");
 	lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
 
-	// Restore passive BLE scan for WiFi coexistence
-	printf("PairController: Restoring passive BLE scan\n");
+	// Restore normal BLE scan parameters
+	printf("PairController: Restoring normal BLE scan\n");
 	NimBLEScan *pBLEScan = NimBLEDevice::getScan();
 	pBLEScan->stop();
-	pBLEScan->setActiveScan(false);
-	pBLEScan->setInterval(160);
-	pBLEScan->setWindow(80);
+	pBLEScan->setActiveScan(true);
+	pBLEScan->setInterval(100);
+	pBLEScan->setWindow(50);
 	pBLEScan->start(0, false, false);
 
 	// Wait and reboot

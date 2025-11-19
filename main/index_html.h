@@ -6,7 +6,7 @@ static const char *index_html = R"HTML(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TPMS Configuration</title>
+    <title>BTPMS Config</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🏍️</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -85,7 +85,7 @@ static const char *index_html = R"HTML(
 </head>
 <body>
     <div class="container">
-        <h1>🏍️ TPMS Configuration</h1>
+        <h1>🏍️ BTPMS Config</h1>
         
         <div class="card">
             <h2>📡 Discovered Sensors</h2>
@@ -107,9 +107,27 @@ static const char *index_html = R"HTML(
             <label class="label">Rear Ideal PSI:</label>
             <input type="number" id="rearPsi" step="0.1" min="0" max="100">
             
+            <label class="label">Pressure Unit:</label>
+            <select id="pressureUnit" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+                <option value="PSI">PSI</option>
+                <option value="BAR">BAR</option>
+            </select>
+            
             <button onclick="saveConfig()">💾 Save Configuration</button>
             <button onclick="clearConfig()" class="btn-danger">🗑️ Clear Configuration</button>
             <button onclick="restartDevice()" class="btn-danger">🔄 Restart Device</button>
+        </div>
+
+        <div class="card">
+            <h2>🔄 Firmware Update (OTA)</h2>
+            <label class="label">Select Firmware File (.bin):</label>
+            <input type="file" id="firmwareFile" accept=".bin" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+            <button onclick="uploadFirmware()" id="uploadBtn">📤 Upload Firmware</button>
+            <div id="otaProgress" style="display: none; margin-top: 15px;">
+                <div style="background: #555; border-radius: 6px; overflow: hidden; height: 30px;">
+                    <div id="otaProgressBar" style="background: #4CAF50; height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;"></div>
+                </div>
+            </div>
         </div>
 
         <div id="status" class="status" style="display: none;"></div>
@@ -177,6 +195,7 @@ static const char *index_html = R"HTML(
                 document.getElementById('rearAddr').value = config.rear_address || '';
                 document.getElementById('frontPsi').value = config.front_ideal_psi || 36;
                 document.getElementById('rearPsi').value = config.rear_ideal_psi || 42;
+                document.getElementById('pressureUnit').value = config.pressure_unit || 'PSI';
             } catch (e) {
                 showStatus('Failed to load config', 'error');
             }
@@ -188,7 +207,8 @@ static const char *index_html = R"HTML(
                 front_address: document.getElementById('frontAddr').value,
                 rear_address: document.getElementById('rearAddr').value,
                 front_ideal_psi: parseFloat(document.getElementById('frontPsi').value),
-                rear_ideal_psi: parseFloat(document.getElementById('rearPsi').value)
+                rear_ideal_psi: parseFloat(document.getElementById('rearPsi').value),
+                pressure_unit: document.getElementById('pressureUnit').value
             };
 
             try {
@@ -251,6 +271,78 @@ static const char *index_html = R"HTML(
                 showStatus('Failed to clear config', 'error');
             }
             showLoading(false);
+        }
+
+        async function uploadFirmware() {
+            const fileInput = document.getElementById('firmwareFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('Please select a firmware file', 'error');
+                return;
+            }
+            
+            if (!file.name.endsWith('.bin')) {
+                showStatus('Please select a .bin file', 'error');
+                return;
+            }
+            
+            if (!confirm('Upload firmware? Device will restart after update.')) {
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressDiv = document.getElementById('otaProgress');
+            const progressBar = document.getElementById('otaProgressBar');
+            
+            uploadBtn.disabled = true;
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            
+            try {
+                const formData = new FormData();
+                formData.append('firmware', file);
+                
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percent + '%';
+                        progressBar.textContent = percent + '%';
+                    }
+                });
+                
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        progressBar.style.width = '100%';
+                        progressBar.textContent = '100%';
+                        showStatus('Firmware uploaded! Device restarting...', 'success');
+                        setTimeout(() => {
+                            showStatus('Device restarted. Please reconnect.', 'info');
+                        }, 3000);
+                    } else {
+                        showStatus('Upload failed: ' + xhr.statusText, 'error');
+                        uploadBtn.disabled = false;
+                        progressDiv.style.display = 'none';
+                    }
+                });
+                
+                xhr.addEventListener('error', () => {
+                    showStatus('Upload failed: Network error', 'error');
+                    uploadBtn.disabled = false;
+                    progressDiv.style.display = 'none';
+                });
+                
+                xhr.open('POST', '/api/ota/upload');
+                xhr.send(file);
+                
+            } catch (e) {
+                showStatus('Upload failed: ' + e.message, 'error');
+                uploadBtn.disabled = false;
+                progressDiv.style.display = 'none';
+            }
         }
 
         // Auto-refresh sensors every 5 seconds

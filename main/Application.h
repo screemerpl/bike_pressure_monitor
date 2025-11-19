@@ -63,6 +63,7 @@ private:
 	void updateUIIfPaired();
 
 	// LVGL async callbacks
+	static void setVersionLabelCallback(void *arg);
 	static void showSplashScreenCallback(void *arg);
 	static void showMainScreenCallback(void *arg);
 	static void showPairScreenCallback(void *arg);

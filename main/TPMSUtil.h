@@ -21,6 +21,7 @@ public:
   char identifier[3];
   char sensorNumber;
   float pressurePSI;
+  float pressureBar;
   float temperatureC;
   char batteryLevel;
   bool alert;

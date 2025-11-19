@@ -21,6 +21,7 @@ public:
 	bool isPaired = false;
 	float frontIdealPSI = 0.0f;
 	float rearIdealPSI = 0.0f;
+	std::string pressureUnit = "PSI"; // "PSI" or "BAR"
 
 	static State &getInstance();
 

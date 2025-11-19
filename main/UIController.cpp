@@ -15,7 +15,12 @@ UIController &UIController::instance() {
 
 void UIController::startLVGLTickTimer() {
 	const esp_timer_create_args_t timerArgs = {
-		.callback = &lvglTickCallback, .arg = nullptr, .name = "lv_tick"};
+		.callback = &lvglTickCallback, 
+		.arg = nullptr, 
+		.dispatch_method = ESP_TIMER_TASK,
+		.name = "lv_tick",
+		.skip_unhandled_events = false
+	};
 
 	esp_timer_handle_t tickTimer;
 	esp_timer_create(&timerArgs, &tickTimer);
@@ -46,10 +51,13 @@ void UIController::lvglTimerTaskWrapper(void *pvParameter) {
 	static_cast<UIController *>(pvParameter)->lvglTimerTask();
 }
 
-void UIController::showSplashScreen() {
+void UIController::setVersionLabel() {
 	char versionText[32];
 	snprintf(versionText, sizeof(versionText), "%s", Application::appVersion);
 	lv_label_set_text(ui_Label2, versionText);
+}
+
+void UIController::showSplashScreen() {
 	lv_screen_load_anim(ui_Splash, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
@@ -61,14 +69,12 @@ void UIController::showPairScreen() {
 	lv_screen_load_anim(ui_Pair, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
-void UIController::showConfigScreen() {
-	// Show splash screen with config mode message
-	lv_label_set_text(ui_Label1, "WiFi Config Mode");
-	lv_label_set_text(ui_Label2, "Connect to: TPMS-Config");
-	lv_screen_load_anim(ui_Splash, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, false);
-}
-
 void UIController::initializeLabels() {
+	State &state = State::getInstance();
+	
+	// Set unit label based on configuration
+	lv_label_set_text(ui_Unit, state.pressureUnit.c_str());
+	
 	lv_label_set_text(ui_Label3, "---");
 	lv_label_set_text(ui_Label4, "---");
 	lv_label_set_text(ui_Label5, "-- °C");
@@ -83,44 +89,52 @@ void UIController::initializeLabels() {
 	lv_image_set_src(ui_Image7, &ui_img_btoff_png);
 	lv_image_set_src(ui_Image9, &ui_img_idle_png);
 	lv_image_set_src(ui_Image10, &ui_img_idle_png);
-	lv_obj_clear_flag(ui_Spinner1, LV_OBJ_FLAG_HIDDEN);
 }
 
 void UIController::updateSensorUI(TPMSUtil *frontSensor, TPMSUtil *rearSensor,
 								  float frontIdealPSI, float rearIdealPSI,
 								  uint32_t currentTime) {
-	bool frontSynced = false;
-	bool rearSynced = false;
+
+	
 	bool alertFront = false;
 	bool alertRear = false;
 
 	if (frontSensor) {
 		updateFrontSensorUI(frontSensor, frontIdealPSI, currentTime);
-		frontSynced = true;
+
 		alertFront = frontSensor->alert;
 	} else {
-		clearFrontSensorUI();
+		clearFrontSensorUI(true); // true = apply blink
 	}
 
 	if (rearSensor) {
 		updateRearSensorUI(rearSensor, rearIdealPSI, currentTime);
-		rearSynced = true;
+
 		alertRear = rearSensor->alert;
 	} else {
-		clearRearSensorUI();
+		clearRearSensorUI(true); // true = apply blink
 	}
 
-	updateSpinner(frontSynced, rearSynced);
 	updateAlertIcons(alertFront, alertRear);
 }
 
 void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
-									   float frontIdealPSI,
-									   uint32_t currentTime) {
+								   float frontIdealPSI,
+								   uint32_t currentTime) {
 	char buf[16];
-	snprintf(buf, sizeof(buf), "%.1f", frontSensor->pressurePSI);
+	State &state = State::getInstance();
+	
+	// Display pressure in selected unit
+	if (state.pressureUnit == "BAR") {
+		snprintf(buf, sizeof(buf), "%.2f", frontSensor->pressureBar);
+	} else {
+		snprintf(buf, sizeof(buf), "%.1f", frontSensor->pressurePSI);
+	}
 	lv_label_set_text(ui_Label3, buf);
-
+	
+	// Reset label color to white when sensor is synchronized
+	lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF),
+								LV_PART_MAIN );
 	snprintf(buf, sizeof(buf), "%.1f °C", frontSensor->temperatureC);
 	lv_label_set_text(ui_Label5, buf);
 
@@ -134,14 +148,14 @@ void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
 	// Change bar color to blue if temperature is below 10°C
 	if (frontSensor->temperatureC < 10.0f) {
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x000080),
-								  LV_PART_MAIN | LV_STATE_DEFAULT);
+								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x0000FF),
-								  LV_PART_INDICATOR | LV_STATE_DEFAULT);
+								  LV_PART_INDICATOR);
 	} else {
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x183A1B),
-								  LV_PART_MAIN | LV_STATE_DEFAULT);
+								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x00FF13),
-								  LV_PART_INDICATOR | LV_STATE_DEFAULT);
+								  LV_PART_INDICATOR);
 	}
 
 	// Update pressure indicator icon
@@ -162,11 +176,21 @@ void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
 }
 
 void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
-									  uint32_t currentTime) {
+								  uint32_t currentTime) {
 	char buf[16];
-	snprintf(buf, sizeof(buf), "%.1f", rearSensor->pressurePSI);
+	State &state = State::getInstance();
+	
+	// Display pressure in selected unit
+	if (state.pressureUnit == "BAR") {
+		snprintf(buf, sizeof(buf), "%.2f", rearSensor->pressureBar);
+	} else {
+		snprintf(buf, sizeof(buf), "%.1f", rearSensor->pressurePSI);
+	}
 	lv_label_set_text(ui_Label4, buf);
-
+	
+	// Reset label color to white when sensor is synchronized
+	lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF),
+								LV_PART_MAIN );
 	snprintf(buf, sizeof(buf), "%.1f °C", rearSensor->temperatureC);
 	lv_label_set_text(ui_Label6, buf);
 
@@ -180,14 +204,14 @@ void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
 	// Change bar color to blue if temperature is below 10°C
 	if (rearSensor->temperatureC < 10.0f) {
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x000080),
-								  LV_PART_MAIN | LV_STATE_DEFAULT);
+								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x0000FF),
-								  LV_PART_INDICATOR | LV_STATE_DEFAULT);
+								  LV_PART_INDICATOR);
 	} else {
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x183A1B),
-								  LV_PART_MAIN | LV_STATE_DEFAULT);
+								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x00FF13),
-								  LV_PART_INDICATOR | LV_STATE_DEFAULT);
+								  LV_PART_INDICATOR);
 	}
 
 	// Update pressure indicator icon
@@ -207,8 +231,25 @@ void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
 	}
 }
 
-void UIController::clearFrontSensorUI() {
+void UIController::clearFrontSensorUI(bool applyBlink) {
 	lv_label_set_text(ui_Label3, "---");
+
+	// Apply blinking effect only if requested: white when blink state is true,
+	// black when false
+	if (applyBlink) {
+		if (m_labelBlinkState) {
+			lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF),
+										LV_PART_MAIN);
+		} else {
+			lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0x000000),
+										LV_PART_MAIN);
+		}
+	} else {
+		// Reset to white when not blinking
+		lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF),
+									LV_PART_MAIN);
+	}
+
 	lv_label_set_text(ui_Label5, "-- °C");
 	lv_label_set_text(ui_Label7, "--%");
 	lv_arc_set_value(ui_Arc2, 0);
@@ -217,8 +258,25 @@ void UIController::clearFrontSensorUI() {
 	lv_image_set_src(ui_Image6, &ui_img_btoff_png);
 }
 
-void UIController::clearRearSensorUI() {
+void UIController::clearRearSensorUI(bool applyBlink) {
 	lv_label_set_text(ui_Label4, "---");
+
+	// Apply blinking effect only if requested: white when blink state is true,
+	// black when false
+	if (applyBlink) {
+		if (m_labelBlinkState) {
+			lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF),
+										LV_PART_MAIN);
+		} else {
+			lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0x000000),
+										LV_PART_MAIN);
+		}
+	} else {
+		// Reset to white when not blinking
+		lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF),
+									LV_PART_MAIN);
+	}
+
 	lv_label_set_text(ui_Label6, "-- °C");
 	lv_label_set_text(ui_Label8, "--%");
 	lv_arc_set_value(ui_Arc1, 0);
@@ -244,18 +302,16 @@ void UIController::updateAlertIcons(bool alertFront, bool alertRear) {
 	}
 }
 
-void UIController::updateSpinner(bool frontSynced, bool rearSynced) {
-	if (rearSynced || frontSynced) {
-		lv_obj_add_flag(ui_Spinner1, LV_OBJ_FLAG_HIDDEN);
-	} else {
-		lv_obj_clear_flag(ui_Spinner1, LV_OBJ_FLAG_HIDDEN);
-	}
-}
-
 void UIController::updateAlertBlinkState(uint32_t currentTime) {
 	// Toggle blink state every 250ms
 	if (currentTime - m_lastBlinkTime >= 250) {
 		m_alertBlinkState = !m_alertBlinkState;
 		m_lastBlinkTime = currentTime;
+	}
+
+	// Toggle label blink state every 500ms
+	if (currentTime - m_lastLabelBlinkTime >= 500) {
+		m_labelBlinkState = !m_labelBlinkState;
+		m_lastLabelBlinkTime = currentTime;
 	}
 }

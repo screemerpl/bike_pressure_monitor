@@ -3,7 +3,8 @@ file(GLOB_RECURSE UI_SOURCES
     "UI/components/*.c"
     "UI/screens/*.c"
     "UI/images/*.c"
-    "UI/*.c")
+    "UI/*.c"
+    "UI/images/ui_img_942102620.c")
 
 # Automatically find all .cpp files in main directory
 file(GLOB APP_SOURCES "*.cpp")
@@ -11,7 +12,7 @@ file(GLOB APP_SOURCES "*.cpp")
 idf_component_register(SRCS ${APP_SOURCES}
                             ${UI_SOURCES}
                      INCLUDE_DIRS "." 
-                     REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom esp_http_server esp_netif esp_wifi nvs_flash)
+                     REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom esp_http_server esp_netif esp_wifi nvs_flash app_update)
 
 
 

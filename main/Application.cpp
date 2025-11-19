@@ -57,6 +57,9 @@ void Application::loadConfiguration() {
 	// Load ideal pressure values
 	m_config.getFloat("front_ideal_psi", state.frontIdealPSI, DEFAULT_FRONT_PSI);
 	m_config.getFloat("rear_ideal_psi", state.rearIdealPSI, DEFAULT_REAR_PSI);
+	
+	// Load pressure unit preference
+	m_config.getString("pressure_unit", state.pressureUnit, "PSI");
 
 	// Load and validate brightness setting
 	int brightnessIndex = DEFAULT_BRIGHTNESS_INDEX;
@@ -79,6 +82,9 @@ void Application::initializeDisplay() {
 
 	m_uiController = &UIController::instance();
 	m_pairController = &PairController::instance();
+
+	// Set version label before any screen transitions
+	m_uiController->setVersionLabel();
 
 	// Apply saved brightness setting
 	m_display->setBacklightBrightness(BRIGHTNESS_LEVELS[m_currentBrightnessIndex]);
@@ -110,14 +116,14 @@ void Application::initBLE() {
 	NimBLEScan *pBLEScan = NimBLEDevice::getScan();
 
 	pBLEScan->setScanCallbacks(&m_scanCallbacks, false);
-	// Passive scan to reduce interference with WiFi
-	pBLEScan->setActiveScan(false);
-	pBLEScan->setInterval(160); // 100ms
-	pBLEScan->setWindow(80);    // 50ms (50% duty cycle for WiFi coexistence)
+	// Active scan with moderate parameters for balance between speed and WiFi coexistence
+	pBLEScan->setActiveScan(true);
+	pBLEScan->setInterval(100); // 62.5ms
+	pBLEScan->setWindow(50);    // 31.25ms (50% duty cycle)
 	pBLEScan->setMaxResults(0);
 	pBLEScan->start(BLE_SCAN_TIME_MS, false, true);
 
-	printf("BLE scanning started (passive mode for WiFi coexistence)\n");
+	printf("BLE scanning started (active mode with WiFi coexistence)\n");
 }
 
 void Application::controlLogicTask() {
@@ -263,6 +269,11 @@ void Application::updateUIIfPaired() {
 	if (state.isPaired) {
 		lv_async_call(updateLabelsCallback, nullptr);
 	}
+}
+
+void Application::setVersionLabelCallback(void *arg) {
+	(void)arg;
+	UIController::instance().setVersionLabel();
 }
 
 void Application::showSplashScreenCallback(void *arg) {

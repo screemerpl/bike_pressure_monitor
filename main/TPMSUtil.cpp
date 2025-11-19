@@ -63,6 +63,7 @@ void TPMSUtil::parsePressure() {
   long result = this->getLongValue(8);
   float kPA = result / 1000.0f;
   this->pressurePSI = kPA * 0.14503773773020923f;
+  this->pressureBar = kPA / 100.0f;
 }
 
 void TPMSUtil::parseTemperature() {

@@ -14,7 +14,7 @@ extern "C" {
 extern void ui_Main_screen_init(void);
 extern void ui_Main_screen_destroy(void);
 extern lv_obj_t * ui_Main;
-extern lv_obj_t * ui_Label1;
+extern lv_obj_t * ui_Unit;
 extern lv_obj_t * ui_Label3;
 extern lv_obj_t * ui_Label4;
 extern lv_obj_t * ui_Arc2;
@@ -37,7 +37,7 @@ extern lv_obj_t * ui_Image9;
 extern lv_obj_t * ui_Image10;
 // CUSTOM VARIABLES
 extern lv_obj_t * uic_Main;
-extern lv_obj_t * uic_Label1;
+extern lv_obj_t * uic_Unit;
 
 #ifdef __cplusplus
 } /*extern "C"*/

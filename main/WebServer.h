@@ -31,6 +31,8 @@ private:
 	static esp_err_t handlePairSensor(httpd_req_t *req);
 	static esp_err_t handleClearConfig(httpd_req_t *req);
 	static esp_err_t handleRestart(httpd_req_t *req);
+	static esp_err_t handleOTAUpload(httpd_req_t *req);
+	static esp_err_t handleOTAStatus(httpd_req_t *req);
 
 	// Helper functions
 	static std::string getSensorsJSON();
@@ -38,4 +40,9 @@ private:
 	static esp_err_t sendJSON(httpd_req_t *req, const char *json);
 
 	httpd_handle_t m_server = nullptr;
+	
+	// OTA state
+	static bool s_otaInProgress;
+	static int s_otaProgress;
+	static std::string s_otaError;
 };

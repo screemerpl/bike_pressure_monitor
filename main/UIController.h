@@ -12,10 +12,10 @@ public:
 	void startLVGLTask();
 
 	// Screen transitions
+	void setVersionLabel();
 	void showSplashScreen();
 	void showMainScreen();
 	void showPairScreen();
-	void showConfigScreen();
 
 	// UI initialization
 	void initializeLabels();
@@ -47,12 +47,15 @@ private:
 							 uint32_t currentTime);
 	void updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
 							uint32_t currentTime);
-	void clearFrontSensorUI();
-	void clearRearSensorUI();
+	void clearFrontSensorUI(bool applyBlink = false);
+	void clearRearSensorUI(bool applyBlink = false);
 	void updateAlertIcons(bool alertFront, bool alertRear);
-	void updateSpinner(bool frontSynced, bool rearSynced);
 
 	// Alert blinking state
 	bool m_alertBlinkState = false;
 	uint32_t m_lastBlinkTime = 0;
+	
+	// Label blinking state (for unsynchronized sensors)
+	bool m_labelBlinkState = false;
+	uint32_t m_lastLabelBlinkTime = 0;
 };

@@ -578,3 +578,4 @@ const lv_image_dsc_t ui_img_942102620 = {
     .data = ui_img_942102620_data
 };
 
+
