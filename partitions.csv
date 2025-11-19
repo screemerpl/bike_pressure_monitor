@@ -1,4 +1,4 @@
-﻿# Name,   Type, SubType, Offset,  Size, Flags
+# Name,   Type, SubType, Offset,  Size, Flags
 # Note: 4MB flash total, OTA enabled
 nvs,      data, nvs,     0x9000,  0x5000,
 phy_init, data, phy,     0xe000,  0x1000,

@@ -1,0 +1,9 @@
+# Partition table must have LF line endings
+partitions.csv text eol=lf
+
+# CMake files
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+
+# Python scripts
+*.py text eol=lf
