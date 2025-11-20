@@ -89,7 +89,8 @@ void DisplayManager::init() {
 		.duty_resolution = static_cast<ledc_timer_bit_t>(BACKLIGHT_RESOLUTION),
 		.timer_num = LEDC_TIMER_0,
 		.freq_hz = BACKLIGHT_FREQ,
-		.clk_cfg = LEDC_AUTO_CLK
+		.clk_cfg = LEDC_AUTO_CLK,
+		.deconfigure = false
 	};
 	ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 	

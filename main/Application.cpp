@@ -7,6 +7,7 @@
 
 #include "Application.h"
 #include "State.h"             // Global state singleton
+#include "SPIFFSManager.h"     // SPIFFS filesystem for PNG images
 #include "driver/gpio.h"       // GPIO configuration for button
 #include "esp_timer.h"         // High-resolution timer for timestamps
 #include "esp_log.h"           // ESP logging
@@ -31,7 +32,7 @@ static constexpr int DEFAULT_BRIGHTNESS_INDEX = 4;           ///< Default bright
 static constexpr uint8_t MAX_BRIGHTNESS_INDEX = 4;           ///< Maximum brightness index
 
 /// Log tag for Application module
-static const char* TAG = "Application";
+[[maybe_unused]] static const char* TAG = "Application";
 
 /**
  * @brief Get singleton instance (Meyer's singleton)
@@ -56,6 +57,11 @@ void Application::init() {
 	// Set default log level for all components
 	esp_log_level_set("*", ESP_LOG_WARN);
 	esp_log_level_set("lv", ESP_LOG_WARN);
+
+	// Mount SPIFFS filesystem for PNG images
+	if (!SPIFFSManager::instance().init()) {
+		ESP_LOGW("Application", "Failed to mount SPIFFS - PNG images may not load");
+	}
 
 	// Load configuration from NVS (sensors, brightness, WiFi mode flag)
 	loadConfiguration();

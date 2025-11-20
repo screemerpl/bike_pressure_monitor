@@ -7,3 +7,6 @@ CMakeLists.txt text eol=lf
 
 # Python scripts
 *.py text eol=lf
+
+# UI header files (must be UTF-8 without BOM)
+main/UI/ui.h text eol=lf
