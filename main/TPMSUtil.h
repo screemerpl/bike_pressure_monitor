@@ -53,6 +53,15 @@ public:
 	static bool isTPMSSensor(const std::string& manufacturerData);
 	
 	/**
+	 * @brief Check if manufacturer data is from a TPMS sensor (raw pointer version)
+	 * @param data Pointer to raw BLE manufacturer data
+	 * @param length Length of data (must be 18 bytes)
+	 * @return true if data matches TPMS sensor format
+	 * @details Optimized version for direct use from callback handlers - avoids string copy overhead
+	 */
+	static bool isTPMSSensor(const uint8_t* data, size_t length);
+	
+	/**
 	 * @brief Parse manufacturer data and create TPMSUtil object
 	 * @param manufacturerData Raw BLE manufacturer data (18 bytes)
 	 * @param address Sensor MAC address

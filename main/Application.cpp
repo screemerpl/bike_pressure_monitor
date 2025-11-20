@@ -224,11 +224,12 @@ void Application::initBLE() {
 	pBLEScan->setInterval(100);     // 62.5ms scan interval
 	pBLEScan->setWindow(50);        // 31.25ms scan window (50% duty cycle)
 	pBLEScan->setMaxResults(0);     // No limit on results
+	pBLEScan->setDuplicateFilter(1);  // Enable HCI-level duplicate filtering - reduces CPU/callbacks by ~50%
 	
 	// Start continuous scanning
 	pBLEScan->start(BLE_SCAN_TIME_MS, false, true);
 
-	ESP_LOGI(TAG, "BLE scanning started (active mode with WiFi coexistence)");
+	ESP_LOGI(TAG, "BLE scanning started (active mode with HCI duplicate filter enabled)");
 }
 
 /**

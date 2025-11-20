@@ -66,21 +66,36 @@ TPMSUtil::~TPMSUtil() {
  */
 bool TPMSUtil::isTPMSSensor(const std::string& manufacturerData) {
 	const unsigned char *dataP = reinterpret_cast<const unsigned char *>(manufacturerData.c_str());
-	
+	return isTPMSSensor(dataP, manufacturerData.size());
+}
+
+/**
+ * @brief Validate if manufacturer data is from a TPMS sensor (raw pointer version)
+ * @param data Pointer to raw BLE manufacturer data
+ * @param length Length of data (must be 18 bytes)
+ * @return true if data format matches TPMS sensor specification
+ * @details Optimized version for direct use from callback handlers - avoids string copy overhead.
+ *          Validation checks:
+ *          1. Length must be exactly 18 bytes
+ *          2. Header bytes [0-1] must be 0x00 0x01
+ *          3. Magic bytes [3-4] must be 0xEA 0xCA
+ *          4. Sensor number byte [2] must be >= 0x80
+ */
+bool TPMSUtil::isTPMSSensor(const uint8_t* data, size_t length) {
 	// Check length
-	if (manufacturerData.size() != 18)
+	if (length != 18)
 		return false;
 	
 	// Check header bytes (0x00 0x01)
-	if (dataP[0] != 0x00 || dataP[1] != 0x01)
+	if (data[0] != 0x00 || data[1] != 0x01)
 		return false;
 	
 	// Check magic bytes (0xEA 0xCA)
-	if (dataP[3] != 0xea || dataP[4] != 0xca)
+	if (data[3] != 0xea || data[4] != 0xca)
 		return false;
 	
 	// Check sensor number (must be >= 0x80)
-	if (dataP[2] < 0x80)
+	if (data[2] < 0x80)
 		return false;
 
 	return true;
