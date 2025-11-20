@@ -43,6 +43,7 @@ extern "C" void my_disp_flush(lv_display_t *disp, const lv_area_t *area,
 /**
  * @brief Flush screen buffer to display via DMA
  * @details Swaps byte order and pushes pixel data to the display using DMA
+ *          Optimized: Uses 32-bit word swapping to reduce byte swap overhead
  * @param disp LVGL display object
  * @param area Screen area to update
  * @param px_map Pixel data buffer
@@ -63,8 +64,22 @@ void DisplayManager::flushScreen(lv_display_t *disp, const lv_area_t *area,
 	const size_t pixels = (size_t)w * (size_t)h;
 
 	// Swap bytes for correct color display (RGB565 byte order)
-	for (size_t i = 0; i < pixels; ++i) {
-		src16[i] = lv_swap_bytes_16(src16[i]);
+	// Optimized: Process 2 pixels (4 bytes) at once using 32-bit swaps
+	const size_t pixels_aligned = pixels & ~1UL;  // Align to even number
+	
+	for (size_t i = 0; i < pixels_aligned; i += 2) {
+		// Process 2 pixels at once (4 bytes = 1 uint32_t)
+		uint32_t *p32 = reinterpret_cast<uint32_t *>(&src16[i]);
+		uint32_t val = *p32;
+		
+		// Swap bytes in both pixels: AABB -> BBAA for each 16-bit word
+		uint32_t swapped = ((val & 0x00FF00FF) << 8) | ((val & 0xFF00FF00) >> 8);
+		*p32 = swapped;
+	}
+	
+	// Handle remaining pixel if odd count
+	if (pixels & 1UL) {
+		src16[pixels - 1] = lv_swap_bytes_16(src16[pixels - 1]);
 	}
 	
 	// Push image data to display via DMA

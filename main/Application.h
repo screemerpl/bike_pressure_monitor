@@ -64,6 +64,18 @@ public:
 	 */
 	uint32_t getStartTime() const { return m_startTime; }
 
+	/**
+	 * @struct ButtonState
+	 * @brief Tracks button press state for debouncing and duration detection
+	 */
+	struct ButtonState {
+		bool lastState = true;       ///< Previous button state (true = released)
+		uint32_t pressStartTime = 0; ///< Timestamp when button was pressed
+		bool pressHandled = false;   ///< Flag to prevent double-handling
+		bool debounceActive = false; ///< Debounce timer active flag
+		uint32_t debounceTime = 0;   ///< Debounce timeout timestamp
+	};
+
 private:
 	Application() = default;   ///< Private constructor for singleton
 	~Application() = default;  ///< Private destructor
@@ -83,20 +95,10 @@ private:
 	void controlLogicTask();  ///< Main application loop (screen transitions, button handling)
 
 	// Control task helpers
-	void configureButton();  ///< Configure GPIO9 as button input with pullup
+	void configureButton();  ///< Configure GPIO9 as button input with interrupt handler
 	uint32_t getElapsedTime() const;  ///< Get milliseconds since application start
 	void handleScreenTransitions(uint32_t elapsed, bool &splashShown,
 								 bool &mainShown);  ///< Manage splash -> main/pair screen flow
-
-	/**
-	 * @struct ButtonState
-	 * @brief Tracks button press state for debouncing and duration detection
-	 */
-	struct ButtonState {
-		bool lastState = true;       ///< Previous button state (true = released)
-		uint32_t pressStartTime = 0; ///< Timestamp when button was pressed
-		bool pressHandled = false;   ///< Flag to prevent double-handling
-	};
 
 	void handleButtonInput(ButtonState &state);  ///< Process button press/release events
 	void handleLongPress();      ///< 2s press: Clear sensor pairing and reboot
