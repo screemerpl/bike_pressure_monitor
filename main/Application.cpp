@@ -15,14 +15,23 @@
 #include "lvgl.h"              // LVGL async calls
 #include <NimBLEDevice.h>      // BLE scanning
 
-// Timing constants (milliseconds)
-static constexpr uint32_t SPLASH_SCREEN_DELAY_MS = 1000;     ///< Delay before showing splash screen
-static constexpr uint32_t MAIN_SCREEN_DELAY_MS = 4500;       ///< Delay before showing main/pair screen
-static constexpr uint32_t LABEL_INIT_DELAY_MS = 50;          ///< Delay after initializing labels
-static constexpr uint32_t LONG_PRESS_DURATION_MS = 2000;     ///< Duration for long press (clear pairing)
-static constexpr uint32_t VERY_LONG_PRESS_DURATION_MS = 15000; ///< Duration for very long press (WiFi mode)
-static constexpr uint32_t CONTROL_LOOP_DELAY_MS = 100;       ///< Main control loop iteration delay
-static constexpr uint32_t BLE_SCAN_TIME_MS = 1000;           ///< BLE scan window duration
+/**
+ * @struct ButtonState
+ * @brief Tracks button press state for debouncing and duration detection
+ */
+struct ButtonState {
+	bool lastState = true;       ///< Previous button state (true = released)
+	uint32_t pressStartTime = 0; ///< Timestamp when button was pressed
+	bool pressHandled = false;   ///< Flag to prevent double-handling
+	bool debounceActive = false; ///< Debounce timer active flag
+	uint32_t debounceTime = 0;   ///< Debounce timeout timestamp
+};
+
+/// Global button state for ISR and task interaction
+static ButtonState g_buttonState = {};
+
+/// Debounce delay in milliseconds
+static constexpr uint32_t DEBOUNCE_DELAY_MS = 50;
 
 // Default configuration values
 static constexpr float DEFAULT_FRONT_PSI = 36.0f;            ///< Default front tire pressure
@@ -32,6 +41,20 @@ static constexpr uint8_t MAX_BRIGHTNESS_INDEX = 4;           ///< Maximum bright
 
 /// Log tag for Application module
 [[maybe_unused]] static const char* TAG = "Application";
+
+/**
+ * @brief GPIO interrupt handler for button press detection
+ * @param arg Unused parameter
+ * @details Called when GPIO9 transitions (edge-triggered interrupt).
+ *          Initiates debounce timer instead of processing immediately.
+ */
+static void IRAM_ATTR button_interrupt_handler(void *arg) {
+	// Start debounce timer - actual press detection handled in control task
+	if (!g_buttonState.debounceActive) {
+		g_buttonState.debounceActive = true;
+		g_buttonState.debounceTime = esp_timer_get_time() / 1000 + DEBOUNCE_DELAY_MS;
+	}
+}
 
 /**
  * @brief Get singleton instance (Meyer's singleton)
@@ -249,11 +272,8 @@ void Application::controlLogicTask() {
 	bool mainShown = false;
 	bool inPairingMode = false;
 
-	// Configure GPIO9 as button input with pullup
+	// Configure GPIO9 as button input with interrupt handler
 	configureButton();
-
-	// Initialize button state tracking
-	ButtonState buttonState = {};
 
 	// Main application loop
 	for (;;) {
@@ -268,8 +288,8 @@ void Application::controlLogicTask() {
 				splashShown = true;
 				printf("Showing splash screen (WiFi config mode)\\n");
 			}
-			// Monitor button for exit request (2s press)
-			handleButtonInput(buttonState);
+			// Monitor button for exit request (2s press) - interrupt-driven
+			handleButtonInput(g_buttonState);
 		} else {
 			// Normal mode operation
 			handleScreenTransitions(elapsed, splashShown, mainShown);
@@ -283,10 +303,10 @@ void Application::controlLogicTask() {
 						inPairingMode = true;
 					}
 					m_pairController->update(currentTime);
-					handleButtonInput(buttonState);
+					handleButtonInput(g_buttonState);
 				} else {
 					// Normal operation: monitor sensors and handle button input
-					handleButtonInput(buttonState);
+					handleButtonInput(g_buttonState);
 					updateUIIfPaired();
 				}
 			}
@@ -298,11 +318,12 @@ void Application::controlLogicTask() {
 }
 
 /**
- * @brief Configure GPIO9 as button input with pullup
+ * @brief Configure GPIO9 as button input with interrupt handler
  * @details Sets up button with:
  *          - Input mode
  *          - Internal pullup enabled
- *          - No interrupts (polled in control loop)
+ *          - Falling edge interrupt (button press detection)
+ *          - Interrupt handler for debounce initiation
  */
 void Application::configureButton() {
 	gpio_config_t io_conf = {};
@@ -310,8 +331,14 @@ void Application::configureButton() {
 	io_conf.mode = GPIO_MODE_INPUT;
 	io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
 	io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-	io_conf.intr_type = GPIO_INTR_DISABLE;
+	io_conf.intr_type = GPIO_INTR_ANYEDGE;  // Detect any edge for debounce
 	gpio_config(&io_conf);
+	
+	// Install GPIO ISR handler
+	gpio_install_isr_service(0);
+	gpio_isr_handler_add(GPIO_NUM_9, button_interrupt_handler, nullptr);
+	
+	ESP_LOGI(TAG, "Button configured with interrupt handler");
 }
 
 /**
@@ -376,54 +403,61 @@ void Application::handleScreenTransitions(uint32_t elapsed, bool &splashShown,
  * - Button is active-low (pressed = GPIO low)
  * - Very long press has priority over long press
  * - Uses state machine to prevent double-handling
+ * - Interrupt-driven with debounce (50ms) for low CPU usage
  */
 void Application::handleButtonInput(ButtonState &state) {
-	bool currentButtonState = gpio_get_level(GPIO_NUM_9);
 	uint32_t currentTime = esp_timer_get_time() / 1000;
-
-	// Button press detected (transition from high to low)
-	if (state.lastState && !currentButtonState) {
-		state.pressStartTime = currentTime;
-		state.pressHandled = false;
-		ESP_LOGD(TAG, "Button pressed");
-	} 
-	// Button held down - check duration for long/very long press
-	else if (!currentButtonState && !state.pressHandled) {
-		uint32_t pressDuration = currentTime - state.pressStartTime;
+	
+	// Check if debounce timer has expired - time to read actual button state
+	if (state.debounceActive && currentTime >= state.debounceTime) {
+		state.debounceActive = false;
 		
-		if (m_wifiConfigMode) {
-			// In WiFi mode: Any long press exits config mode
-			if (pressDuration >= LONG_PRESS_DURATION_MS) {
-				exitWiFiConfigMode();
-				state.pressHandled = true;
-			}
-		} else {
-			// Normal mode: Check for very long press first, then long press
-			if (pressDuration >= VERY_LONG_PRESS_DURATION_MS) {
-				handleVeryLongPress();
-				state.pressHandled = true;
-			} else if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
-				// Don't handle long press yet - wait to see if user continues to very long press
-			}
-		}
-	} 
-	// Button released - determine action based on press duration
-	else if (!state.lastState && currentButtonState) {
-		uint32_t pressDuration = currentTime - state.pressStartTime;
-		if (!state.pressHandled) {
-			if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
-				// Released after long press but before very long press
-				handleLongPress();
-			} else if (pressDuration < LONG_PRESS_DURATION_MS) {
-				// Short press
-				handleShortPress();
-			}
-		}
-		state.pressHandled = false;
-	}
+		bool currentButtonState = gpio_get_level(GPIO_NUM_9);
 
-	// Update state for next iteration
-	state.lastState = currentButtonState;
+		// Button press detected (transition from high to low)
+		if (state.lastState && !currentButtonState) {
+			state.pressStartTime = currentTime;
+			state.pressHandled = false;
+			ESP_LOGD(TAG, "Button pressed");
+		} 
+		// Button held down - check duration for long/very long press
+		else if (!currentButtonState && !state.pressHandled) {
+			uint32_t pressDuration = currentTime - state.pressStartTime;
+			
+			if (m_wifiConfigMode) {
+				// In WiFi mode: Any long press exits config mode
+				if (pressDuration >= LONG_PRESS_DURATION_MS) {
+					exitWiFiConfigMode();
+					state.pressHandled = true;
+				}
+			} else {
+				// Normal mode: Check for very long press first, then long press
+				if (pressDuration >= VERY_LONG_PRESS_DURATION_MS) {
+					handleVeryLongPress();
+					state.pressHandled = true;
+				} else if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
+					// Don't handle long press yet - wait to see if user continues to very long press
+				}
+			}
+		} 
+		// Button released - determine action based on press duration
+		else if (!state.lastState && currentButtonState) {
+			uint32_t pressDuration = currentTime - state.pressStartTime;
+			if (!state.pressHandled) {
+				if (pressDuration >= LONG_PRESS_DURATION_MS && pressDuration < VERY_LONG_PRESS_DURATION_MS) {
+					// Released after long press but before very long press
+					handleLongPress();
+				} else if (pressDuration < LONG_PRESS_DURATION_MS) {
+					// Short press
+					handleShortPress();
+				}
+			}
+			state.pressHandled = false;
+		}
+
+		// Update state for next iteration
+		state.lastState = currentButtonState;
+	}
 }
 
 /**
