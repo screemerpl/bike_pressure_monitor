@@ -1,12 +1,35 @@
-# Partition table must have LF line endings
-partitions.csv text eol=lf
+# All text files should use LF line endings and UTF-8 encoding
+* text=auto eol=lf
+
+# Explicitly mark source files as text
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
 
 # CMake files
 *.cmake text eol=lf
 CMakeLists.txt text eol=lf
 
+# Configuration files
+*.csv text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+sdkconfig* text eol=lf
+
 # Python scripts
 *.py text eol=lf
 
-# UI header files (must be UTF-8 without BOM)
-main/UI/ui.h text eol=lf
+# Markdown and documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Binary files (don't normalize)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bin binary
+*.a binary
+*.so binary
+*.elf binary
