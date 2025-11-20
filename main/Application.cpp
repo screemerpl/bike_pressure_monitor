@@ -401,6 +401,7 @@ void Application::handleScreenTransitions(uint32_t elapsed, bool &splashShown,
  * - Very long press has priority over long press
  * - Uses state machine to prevent double-handling
  * - Interrupt-driven with debounce (50ms) for low CPU usage
+ * - Checks button state every debounce cycle while pressed
  */
 void Application::handleButtonInput(ButtonState &state) {
 	uint32_t currentTime = esp_timer_get_time() / 1000;
@@ -454,6 +455,12 @@ void Application::handleButtonInput(ButtonState &state) {
 
 		// Update state for next iteration
 		state.lastState = currentButtonState;
+		
+		// If button is still pressed, schedule next debounce check
+		if (!currentButtonState) {
+			state.debounceActive = true;
+			state.debounceTime = currentTime + DEBOUNCE_DELAY_MS;
+		}
 	}
 }
 
