@@ -8,6 +8,7 @@
 #include "WebServer.h"
 #include "Application.h"
 #include "State.h"
+#include "TPMSSensor.h"
 #include "index_html.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
@@ -389,12 +390,12 @@ std::string WebServer::getSensorsJSON() {
 			json += ",";
 		first = false;
 
-		TPMSUtil *sensor = pair.second;
+		TPMSSensor *sensor = pair.second;
 		char buf[256];
 		snprintf(buf, sizeof(buf),
 				 "{\"address\":\"%s\",\"pressure\":%.1f,\"temperature\":%.1f,\"battery\":%d}",
-				 pair.first.c_str(), sensor->pressurePSI,
-				 sensor->temperatureC, sensor->batteryLevel);
+				 pair.first.c_str(), sensor->getPressurePSI(),
+				 sensor->getTemperatureC(), sensor->getBatteryLevel());
 		json += buf;
 	}
 

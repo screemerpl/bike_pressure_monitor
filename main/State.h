@@ -12,9 +12,9 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "TPMSUtil.h"         // TPMS sensor data structures
-#include <string>              // std::string
-#include <unordered_map>       // std::unordered_map
+#include "TPMSSensor.h"     // Base class for polymorphic sensor handling
+#include <string>           // std::string
+#include <unordered_map>    // std::unordered_map
 
 /**
  * @class State
@@ -45,10 +45,16 @@ public:
 	
 	// Getters and Setters
 	
-	/** @brief Get sensor data map (const version) */
-	const std::unordered_map<std::string, TPMSUtil *>& getData() const { return m_data; }
-	/** @brief Get sensor data map (mutable version) */
-	std::unordered_map<std::string, TPMSUtil *>& getData() { return m_data; }
+	/**
+	 * @brief Get sensor data map (const version)
+	 * @details Returns map of MAC address -> sensor data (Type 1 or Type 2)
+	 */
+	const std::unordered_map<std::string, TPMSSensor*>& getData() const { return m_data; }
+	/**
+	 * @brief Get sensor data map (mutable version)
+	 * @details Returns map of MAC address -> sensor data (Type 1 or Type 2)
+	 */
+	std::unordered_map<std::string, TPMSSensor*>& getData() { return m_data; }
 	
 	/** @brief Get front sensor MAC address */
 	const std::string& getFrontAddress() const { return m_frontAddress; }
@@ -93,7 +99,7 @@ private:
 	State &operator=(State &&) = delete;         ///< No move assignment
 	
 	// Private member variables
-	std::unordered_map<std::string, TPMSUtil *> m_data;  ///< Map of MAC address -> sensor data
+	std::unordered_map<std::string, TPMSSensor*> m_data;  ///< Map of MAC address -> sensor data (Type 1 or Type 2)
 	std::string m_frontAddress = "";                     ///< Front sensor MAC address
 	std::string m_rearAddress = "";                      ///< Rear sensor MAC address
 	bool m_isInAlertState = false;                       ///< Alert state flag (pressure warning)

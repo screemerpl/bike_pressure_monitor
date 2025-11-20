@@ -168,18 +168,16 @@ void UIController::initializeLabels() {
  * @details Updates both front and rear sensor displays, applies blinking
  *          to unsynchronized sensors, and updates alert icons
  */
-void UIController::updateSensorUI(TPMSUtil *frontSensor, TPMSUtil *rearSensor,
-								  float frontIdealPSI, float rearIdealPSI,
-								  uint32_t currentTime) {
-
-	
+void UIController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSensor,
+							   float frontIdealPSI, float rearIdealPSI,
+							   uint32_t currentTime) {	
 	bool alertFront = false;
 	bool alertRear = false;
 
 	if (frontSensor) {
 		updateFrontSensorUI(frontSensor, frontIdealPSI, currentTime);
 
-		alertFront = frontSensor->alert;
+		alertFront = frontSensor->getAlert();
 	} else {
 		clearFrontSensorUI(true); // true = apply blink
 	}
@@ -187,7 +185,7 @@ void UIController::updateSensorUI(TPMSUtil *frontSensor, TPMSUtil *rearSensor,
 	if (rearSensor) {
 		updateRearSensorUI(rearSensor, rearIdealPSI, currentTime);
 
-		alertRear = rearSensor->alert;
+		alertRear = rearSensor->getAlert();
 	} else {
 		clearRearSensorUI(true); // true = apply blink
 	}
@@ -208,35 +206,35 @@ void UIController::updateSensorUI(TPMSUtil *frontSensor, TPMSUtil *rearSensor,
  *          Temperature bar color: Blue if temp < 10°C, green otherwise
  *          BLE icon: ON if data received within last 200ms
  */
-void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
-								   float frontIdealPSI,
-								   uint32_t currentTime) {
+void UIController::updateFrontSensorUI(TPMSSensor *frontSensor,
+							   float frontIdealPSI,
+							   uint32_t currentTime) {
 	char buf[16];
 	State &state = State::getInstance();
 	
 	// Display pressure in selected unit
 	if (state.getPressureUnit() == "BAR") {
-		snprintf(buf, sizeof(buf), "%.2f", frontSensor->pressureBar);
+		snprintf(buf, sizeof(buf), "%.2f", frontSensor->getPressureBar());
 	} else {
-		snprintf(buf, sizeof(buf), "%.1f", frontSensor->pressurePSI);
+		snprintf(buf, sizeof(buf), "%.1f", frontSensor->getPressurePSI());
 	}
 	lv_label_set_text(ui_Label3, buf);
 	
 	// Reset label color to white when sensor is synchronized
 	lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF),
 								LV_PART_MAIN );
-	snprintf(buf, sizeof(buf), "%.1f °C", frontSensor->temperatureC);
+	snprintf(buf, sizeof(buf), "%.1f °C", frontSensor->getTemperatureC());
 	lv_label_set_text(ui_Label5, buf);
 
-	snprintf(buf, sizeof(buf), "%d%%", frontSensor->batteryLevel);
+	snprintf(buf, sizeof(buf), "%d%%", frontSensor->getBatteryLevel());
 	lv_label_set_text(ui_Label7, buf);
 
-	lv_arc_set_value(ui_Arc2, static_cast<int>(frontSensor->batteryLevel));
-	lv_bar_set_value(ui_Bar1, static_cast<int>(frontSensor->temperatureC),
+	lv_arc_set_value(ui_Arc2, static_cast<int>(frontSensor->getBatteryLevel()));
+	lv_bar_set_value(ui_Bar1, static_cast<int>(frontSensor->getTemperatureC()),
 					 LV_ANIM_ON);
 
 	// Change bar color to blue if temperature is below 10°C
-	if (frontSensor->temperatureC < 10.0f) {
+	if (frontSensor->getTemperatureC() < 10.0f) {
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x000080),
 								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar1, lv_color_hex(0x0000FF),
@@ -249,16 +247,16 @@ void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
 	}
 
 	// Update pressure indicator icon
-	if (frontSensor->pressurePSI < frontIdealPSI * 0.75f) {
+	if (frontSensor->getPressurePSI() < frontIdealPSI * 0.75f) {
 		lv_image_set_src(ui_Image1, &ui_img_tpmsred_png);
-	} else if (frontSensor->pressurePSI < frontIdealPSI * 0.9f) {
+	} else if (frontSensor->getPressurePSI() < frontIdealPSI * 0.9f) {
 		lv_image_set_src(ui_Image1, &ui_img_tpmsyellow_png);
 	} else {
 		lv_image_set_src(ui_Image1, &ui_img_tpmsblack_png);
 	}
 
 	// Update BLE connection status icon
-	if (frontSensor->timestamp + 200 < currentTime) {
+	if (frontSensor->getTimestamp() + 200 < currentTime) {
 		lv_image_set_src(ui_Image6, &ui_img_btoff_png);
 	} else {
 		lv_image_set_src(ui_Image6, &ui_img_bton_png);
@@ -273,34 +271,34 @@ void UIController::updateFrontSensorUI(TPMSUtil *frontSensor,
  * @details Same logic as updateFrontSensorUI but for rear tire UI elements
  *          (ui_Label4, ui_Label6, ui_Label8, ui_Arc1, ui_Bar2, ui_Image3, ui_Image7)
  */
-void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
-								  uint32_t currentTime) {
+void UIController::updateRearSensorUI(TPMSSensor *rearSensor, float rearIdealPSI,
+							  uint32_t currentTime) {
 	char buf[16];
 	State &state = State::getInstance();
 	
 	// Display pressure in selected unit
 	if (state.getPressureUnit() == "BAR") {
-		snprintf(buf, sizeof(buf), "%.2f", rearSensor->pressureBar);
+		snprintf(buf, sizeof(buf), "%.2f", rearSensor->getPressureBar());
 	} else {
-		snprintf(buf, sizeof(buf), "%.1f", rearSensor->pressurePSI);
+		snprintf(buf, sizeof(buf), "%.1f", rearSensor->getPressurePSI());
 	}
 	lv_label_set_text(ui_Label4, buf);
 	
 	// Reset label color to white when sensor is synchronized
 	lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF),
 								LV_PART_MAIN );
-	snprintf(buf, sizeof(buf), "%.1f °C", rearSensor->temperatureC);
+	snprintf(buf, sizeof(buf), "%.1f °C", rearSensor->getTemperatureC());
 	lv_label_set_text(ui_Label6, buf);
 
-	snprintf(buf, sizeof(buf), "%d%%", rearSensor->batteryLevel);
+	snprintf(buf, sizeof(buf), "%d%%", rearSensor->getBatteryLevel());
 	lv_label_set_text(ui_Label8, buf);
 
-	lv_arc_set_value(ui_Arc1, static_cast<int>(rearSensor->batteryLevel));
-	lv_bar_set_value(ui_Bar2, static_cast<int>(rearSensor->temperatureC),
+	lv_arc_set_value(ui_Arc1, static_cast<int>(rearSensor->getBatteryLevel()));
+	lv_bar_set_value(ui_Bar2, static_cast<int>(rearSensor->getTemperatureC()),
 					 LV_ANIM_ON);
 
 	// Change bar color to blue if temperature is below 10°C
-	if (rearSensor->temperatureC < 10.0f) {
+	if (rearSensor->getTemperatureC() < 10.0f) {
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x000080),
 								  LV_PART_MAIN);
 		lv_obj_set_style_bg_color(ui_Bar2, lv_color_hex(0x0000FF),
@@ -313,16 +311,16 @@ void UIController::updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
 	}
 
 	// Update pressure indicator icon
-	if (rearSensor->pressurePSI < rearIdealPSI * 0.75f) {
+	if (rearSensor->getPressurePSI() < rearIdealPSI * 0.75f) {
 		lv_image_set_src(ui_Image3, &ui_img_tpmsred_png);
-	} else if (rearSensor->pressurePSI < rearIdealPSI * 0.9f) {
+	} else if (rearSensor->getPressurePSI() < rearIdealPSI * 0.9f) {
 		lv_image_set_src(ui_Image3, &ui_img_tpmsyellow_png);
 	} else {
 		lv_image_set_src(ui_Image3, &ui_img_tpmsblack_png);
 	}
 
 	// Update BLE connection status icon
-	if (rearSensor->timestamp + 200 < currentTime) {
+	if (rearSensor->getTimestamp() + 200 < currentTime) {
 		lv_image_set_src(ui_Image7, &ui_img_btoff_png);
 	} else {
 		lv_image_set_src(ui_Image7, &ui_img_bton_png);

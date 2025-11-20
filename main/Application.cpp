@@ -73,7 +73,7 @@ Application &Application::instance() {
  *          6. Start LVGL UI system
  */
 void Application::init() {
-	// Set default log level for all components
+	// Set default log level for all components (WARN for normal operation)
 	esp_log_level_set("*", ESP_LOG_WARN);
 	ESP_LOGI(TAG, "Initializing application...");
 
@@ -602,9 +602,9 @@ void Application::updateLabelsCallback(void *arg) {
 	State &state = State::getInstance();
 	UIController &ui = UIController::instance();
 
-	// Look up sensor data by address
-	TPMSUtil *frontSensor = nullptr;
-	TPMSUtil *rearSensor = nullptr;
+	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
+	TPMSSensor *frontSensor = nullptr;
+	TPMSSensor *rearSensor = nullptr;
 
 	auto frontIt = state.getData().find(state.getFrontAddress());
 	if (frontIt != state.getData().end()) {
