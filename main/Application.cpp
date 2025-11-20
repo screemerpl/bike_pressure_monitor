@@ -15,23 +15,20 @@
 #include "lvgl.h"              // LVGL async calls
 #include <NimBLEDevice.h>      // BLE scanning
 
-/**
- * @struct ButtonState
- * @brief Tracks button press state for debouncing and duration detection
- */
-struct ButtonState {
-	bool lastState = true;       ///< Previous button state (true = released)
-	uint32_t pressStartTime = 0; ///< Timestamp when button was pressed
-	bool pressHandled = false;   ///< Flag to prevent double-handling
-	bool debounceActive = false; ///< Debounce timer active flag
-	uint32_t debounceTime = 0;   ///< Debounce timeout timestamp
-};
-
 /// Global button state for ISR and task interaction
-static ButtonState g_buttonState = {};
+static Application::ButtonState g_buttonState = {};
 
 /// Debounce delay in milliseconds
 static constexpr uint32_t DEBOUNCE_DELAY_MS = 50;
+
+// Timing constants (milliseconds)
+static constexpr uint32_t SPLASH_SCREEN_DELAY_MS = 1000;     ///< Delay before showing splash screen
+static constexpr uint32_t MAIN_SCREEN_DELAY_MS = 4500;       ///< Delay before showing main/pair screen
+static constexpr uint32_t LABEL_INIT_DELAY_MS = 50;          ///< Delay after initializing labels
+static constexpr uint32_t LONG_PRESS_DURATION_MS = 2000;     ///< Duration for long press (clear pairing)
+static constexpr uint32_t VERY_LONG_PRESS_DURATION_MS = 15000; ///< Duration for very long press (WiFi mode)
+static constexpr uint32_t CONTROL_LOOP_DELAY_MS = 100;       ///< Main control loop iteration delay
+static constexpr uint32_t BLE_SCAN_TIME_MS = 1000;           ///< BLE scan window duration
 
 // Default configuration values
 static constexpr float DEFAULT_FRONT_PSI = 36.0f;            ///< Default front tire pressure

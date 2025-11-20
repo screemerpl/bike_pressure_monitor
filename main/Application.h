@@ -96,6 +96,8 @@ private:
 		bool lastState = true;       ///< Previous button state (true = released)
 		uint32_t pressStartTime = 0; ///< Timestamp when button was pressed
 		bool pressHandled = false;   ///< Flag to prevent double-handling
+		bool debounceActive = false; ///< Debounce timer active flag
+		uint32_t debounceTime = 0;   ///< Debounce timeout timestamp
 	};
 
 	void handleButtonInput(ButtonState &state);  ///< Process button press/release events
