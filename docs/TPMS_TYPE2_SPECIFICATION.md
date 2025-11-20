@@ -47,14 +47,14 @@ Decoded:
 
 ### Battery Voltage [1]: 8-bit scaled voltage
 - **Storage**: Voltage × 10 (to preserve 0.1V precision)
-- **Range**: 0x14-0x1E (2.0V - 3.0V typical)
+- **Range**: 0x1A-0x20 (2.6V - 3.2V typical)
 - **Formula**:
   ```cpp
   voltage_v = byte[1] * 0.1f
-  percentage = min((voltage_v - 2.0f) * 100.0f, 100.0f)
+  percentage = min((voltage_v - 2.6f) * 166.67f, 100%)
   ```
-- **Example**: 0x1C = 28 decimal → 2.8V → (2.8-2.0)×100 = 80%
-- **Typical Range**: 2.0V (0%) to 3.0V (100%)
+- **Example**: 0x1C = 28 decimal → 2.8V → (2.8-2.6)×166.67 ≈ 33%
+- **Typical Range**: 2.6V (0%) to 3.2V (100%)
 
 ### Temperature [2]: 8-bit direct Celsius
 - **Storage**: Direct Celsius value (no scaling)
@@ -128,7 +128,7 @@ bool isTPMSSensor_Type2(const uint8_t* data, size_t length) {
 2. **Extract Status**: byte[0] → check bit 1 for alarm flag
 3. **Extract Battery**:
    - Raw voltage = byte[1] × 0.1V
-   - Percentage = min((voltage - 2.0) × 100, 100%)
+   - Percentage = min((voltage - 2.6) × 166.67, 100%)
 4. **Extract Temperature**: byte[2] as direct °C
 5. **Extract Pressure**:
    - Raw = byte[4] + (byte[3] << 8) (16-bit LE)
@@ -158,10 +158,10 @@ bool isTPMSSensor_Type2(const uint8_t* data, size_t length) {
 - **Range**: Tested 20-45 PSI (typical operating range)
 
 ### Battery Voltage Mapping
-- **Linear Scale**: 2.0V = 0%, 3.0V = 100%
-- **Formula**: percentage = (voltage - 2.0) × 100
-- **Cap**: Maximum 100% (voltages > 3.0V still show 100%)
-- **Resolution**: 0.1V input → 10% output steps
+- **Linear Scale**: 2.6V = 0%, 3.2V = 100%
+- **Formula**: percentage = (voltage - 2.6) × 166.67
+- **Clamping**: Values < 2.6V show 0%, values ≥ 3.2V show 100%
+- **Resolution**: 0.1V input → ~16.67% output steps
 
 ## Known Limitations / Notes
 

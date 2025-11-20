@@ -87,16 +87,17 @@ void TPMSUtil_Type2::parseStatus() {
  * @brief Parse battery data from byte[1]
  * @details Battery voltage:
  *          - Value = byte[1] * 0.1 (e.g., 28 = 2.8V, 31 = 3.1V)
- *          - Percentage = min((V - 2.0) * 100, 100)
- *          - Typical range: 2.0V-3.0V (0%-100%)
+ *          - Percentage = min((V - 2.6) / 0.6 * 100, 100)
+ *          - Typical range: 2.6V (0%) to 3.2V (100%)
  */
 void TPMSUtil_Type2::parseBattery() {
 	uint8_t rawBattery = m_manufacturerData[1];
 	m_batteryVoltage = rawBattery * 0.1f;
 	
-	// Calculate percentage (2.0V = 0%, 3.0V = 100%, capped at 100%)
-	float percentage = (m_batteryVoltage - 2.0f) * 100.0f;
-	m_batteryPercentage = (percentage > 100.0f) ? 100 : (uint8_t)percentage;
+	// Calculate percentage (2.6V = 0%, 3.2V = 100%, capped at 0-100%)
+	// Formula: (voltage - 2.6V) / 0.6V * 100 = (voltage - 2.6) * 166.67
+	float percentage = (m_batteryVoltage - 2.6f) * 166.67f;
+	m_batteryPercentage = (percentage < 0.0f) ? 0 : ((percentage > 100.0f) ? 100 : (uint8_t)percentage);
 }
 
 /**

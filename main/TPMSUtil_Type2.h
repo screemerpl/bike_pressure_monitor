@@ -24,7 +24,7 @@
  * 
  * Formulas:
  * - Pressure: PSI = 0.10223139 * (byte[4] + byte[3]*256) - 14.61232950
- * - Battery: V = byte[1] * 0.1, Pct = min((V - 2.0) * 100, 100%)
+ * - Battery: V = byte[1] * 0.1, Pct = min((V - 2.6) * 166.67, 100%)
  * - Temperature: °C = byte[2] * 1.0 (no scaling)
  * - Alarm: (byte[0] & 0x02) != 0
  *
