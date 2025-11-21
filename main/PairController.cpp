@@ -59,12 +59,12 @@ void PairController::init() {
 	ESP_LOGI(TAG, "Switched to active BLE scan");
 	
 	// Show initial UI - waiting for button press to start
-	lv_label_set_text(ui_Label10, "-FRONT WHEEL-");
-	lv_label_set_text(ui_Label11, "START PAIRING");
-	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
-	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-	lv_label_set_text(ui_Label12, "---");
+	lv_label_set_text(ui_PairSensorName, "-FRONT WHEEL-");
+	lv_label_set_text(ui_Status, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
+	lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+	lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+	lv_label_set_text(ui_PairTimeout, "---");
 }
 
 /**
@@ -79,12 +79,12 @@ void PairController::startFrontScan() {
 	m_lastSensorCount = 0;
 	
 	// Update UI for front wheel scan
-	lv_label_set_text(ui_Label10, "-FRONT WHEEL-");
-	lv_label_set_text(ui_Label11, "START PAIRING");
-	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
-	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-	lv_label_set_text(ui_Label12, "60s");                // Show initial timeout
+	lv_label_set_text(ui_PairSensorName, "-FRONT WHEEL-");
+	lv_label_set_text(ui_Status, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
+	lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+	lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+	lv_label_set_text(ui_PairTimeout, "60s");                // Show initial timeout
 }
 
 /**
@@ -99,12 +99,12 @@ void PairController::startRearScan() {
 	m_lastSensorCount = 0;
 	
 	// Update UI for rear wheel scan
-	lv_label_set_text(ui_Label10, "-REAR WHEEL-");
-	lv_label_set_text(ui_Label11, "START PAIRING");
-	lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
-	lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-	lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-	lv_label_set_text(ui_Label12, "60s");                // Show initial timeout
+	lv_label_set_text(ui_PairSensorName, "-REAR WHEEL-");
+	lv_label_set_text(ui_Status, "START PAIRING");
+	lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
+	lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+	lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+	lv_label_set_text(ui_PairTimeout, "60s");                // Show initial timeout
 }
 
 /**
@@ -129,7 +129,7 @@ void PairController::update(uint32_t currentTime) {
 		if (elapsed < SCAN_TIMEOUT_MS) {
 			char timeoutText[16];
 			snprintf(timeoutText, sizeof(timeoutText), "%lus", remaining);
-			lv_label_set_text(ui_Label12, timeoutText);
+			lv_label_set_text(ui_PairTimeout, timeoutText);
 		} else {
 			// Timeout reached - show message and wait for button press to retry
 			ESP_LOGW(TAG, "Scan timeout");
@@ -142,11 +142,11 @@ void PairController::update(uint32_t currentTime) {
 			}
 			
 			// Update UI to show timeout
-			lv_label_set_text(ui_Label11, "TIMEOUT");
-			lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
-			lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-			lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-			lv_label_set_text(ui_Label12, "0s");
+			lv_label_set_text(ui_Status, "TIMEOUT");
+			lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow
+			lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+			lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+			lv_label_set_text(ui_PairTimeout, "0s");
 			m_scanStartTime = 0;  // Reset for next attempt
 		}
 	}
@@ -206,18 +206,18 @@ void PairController::checkForNewSensor() {
 void PairController::updateUI() {
 	if (m_state == PairingState::WAITING_FRONT_CONFIRM) {
 		// Show front sensor address in green
-		lv_label_set_text(ui_Label11, m_selectedFrontAddress.c_str());
-		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0x00FF00), LV_PART_MAIN);  // Green
-		lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-		lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-		lv_label_set_text(ui_Label12, "---");
+		lv_label_set_text(ui_Status, m_selectedFrontAddress.c_str());
+		lv_obj_set_style_text_color(ui_Status, lv_color_hex(0x00FF00), LV_PART_MAIN);  // Green
+		lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+		lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+		lv_label_set_text(ui_PairTimeout, "---");
 	} else if (m_state == PairingState::WAITING_REAR_CONFIRM) {
 		// Show rear sensor address in green
-		lv_label_set_text(ui_Label11, m_selectedRearAddress.c_str());
-		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0x00FF00), LV_PART_MAIN);  // Green
-		lv_obj_add_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
-		lv_obj_clear_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);   // Show button icon
-		lv_label_set_text(ui_Label12, "---");
+		lv_label_set_text(ui_Status, m_selectedRearAddress.c_str());
+		lv_obj_set_style_text_color(ui_Status, lv_color_hex(0x00FF00), LV_PART_MAIN);  // Green
+		lv_obj_add_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);    // Hide spinner
+		lv_obj_clear_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);   // Show button icon
+		lv_label_set_text(ui_PairTimeout, "---");
 	}
 }
 
@@ -234,19 +234,19 @@ void PairController::handleButtonPress() {
 	if (m_state == PairingState::SCANNING_FRONT || m_state == PairingState::TIMEOUT_FRONT) {
 		// Start or retry front sensor scan
 		ESP_LOGI(TAG, "Starting/retrying front sensor scan");
-		lv_label_set_text(ui_Label11, "SCANNING...");
-		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFFFF), LV_PART_MAIN);  // White
-		lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);  // Show spinner
-		lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);     // Hide button icon
+		lv_label_set_text(ui_Status, "SCANNING...");
+		lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFFFF), LV_PART_MAIN);  // White
+		lv_obj_clear_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);  // Show spinner
+		lv_obj_add_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);     // Hide button icon
 		m_state = PairingState::SCANNING_FRONT;
 		m_scanStartTime = esp_timer_get_time() / 1000;  // Start timeout
 	} else if (m_state == PairingState::SCANNING_REAR || m_state == PairingState::TIMEOUT_REAR) {
 		// Start or retry rear sensor scan
 		ESP_LOGI(TAG, "Starting/retrying rear sensor scan");
-		lv_label_set_text(ui_Label11, "SCANNING...");
-		lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFFFF), LV_PART_MAIN);  // White
-		lv_obj_clear_flag(ui_Spinner4, LV_OBJ_FLAG_HIDDEN);  // Show spinner
-		lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);     // Hide button icon
+		lv_label_set_text(ui_Status, "SCANNING...");
+		lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFFFFFF), LV_PART_MAIN);  // White
+		lv_obj_clear_flag(ui_PairBusy, LV_OBJ_FLAG_HIDDEN);  // Show spinner
+		lv_obj_add_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);     // Hide button icon
 		m_state = PairingState::SCANNING_REAR;
 		m_scanStartTime = esp_timer_get_time() / 1000;  // Start timeout
 	} else if (m_state == PairingState::WAITING_FRONT_CONFIRM) {
@@ -296,8 +296,8 @@ void PairController::savePairingAndReboot() {
 	m_pairingComplete = true;
 
 	// Show completion message
-	lv_label_set_text(ui_Label11, "PAIRING COMPLETE");
-	lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+	lv_label_set_text(ui_Status, "PAIRING COMPLETE");
+	lv_obj_add_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);
 
 	// Restore normal BLE scan parameters (WiFi coexistence friendly)
 	ESP_LOGI(TAG, "Restoring normal BLE scan");

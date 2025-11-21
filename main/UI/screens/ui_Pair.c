@@ -6,12 +6,12 @@
 #include "../ui.h"
 
 lv_obj_t * ui_Pair = NULL;
-lv_obj_t * ui_Label9 = NULL;
-lv_obj_t * ui_Label10 = NULL;
-lv_obj_t * ui_Label11 = NULL;
-lv_obj_t * ui_Spinner4 = NULL;
-lv_obj_t * ui_Label12 = NULL;
-lv_obj_t * ui_Label13 = NULL;
+lv_obj_t * ui_PairOperation = NULL;
+lv_obj_t * ui_PairSensorName = NULL;
+lv_obj_t * ui_Status = NULL;
+lv_obj_t * ui_PairBusy = NULL;
+lv_obj_t * ui_PairTimeout = NULL;
+lv_obj_t * ui_PressKey = NULL;
 // event funtions
 
 // build funtions
@@ -21,63 +21,63 @@ void ui_Pair_screen_init(void)
     ui_Pair = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Pair, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_Label9 = lv_label_create(ui_Pair);
-    lv_obj_set_width(ui_Label9, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label9, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label9, -2);
-    lv_obj_set_y(ui_Label9, -50);
-    lv_obj_set_align(ui_Label9, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label9, "SEARCHING FOR SENSOR");
+    ui_PairOperation = lv_label_create(ui_Pair);
+    lv_obj_set_width(ui_PairOperation, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_PairOperation, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_PairOperation, -2);
+    lv_obj_set_y(ui_PairOperation, -50);
+    lv_obj_set_align(ui_PairOperation, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_PairOperation, "SEARCHING FOR SENSOR");
 
-    ui_Label10 = lv_label_create(ui_Pair);
-    lv_obj_set_width(ui_Label10, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label10, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label10, 0);
-    lv_obj_set_y(ui_Label10, -23);
-    lv_obj_set_align(ui_Label10, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label10, " - FRONT WHEEL -");
+    ui_PairSensorName = lv_label_create(ui_Pair);
+    lv_obj_set_width(ui_PairSensorName, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_PairSensorName, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_PairSensorName, 0);
+    lv_obj_set_y(ui_PairSensorName, -23);
+    lv_obj_set_align(ui_PairSensorName, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_PairSensorName, " - FRONT WHEEL -");
 
-    ui_Label11 = lv_label_create(ui_Pair);
-    lv_obj_set_width(ui_Label11, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label11, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label11, 0);
-    lv_obj_set_y(ui_Label11, 4);
-    lv_obj_set_align(ui_Label11, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label11, "NOT YET FOUND");
-    lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label11, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_Status = lv_label_create(ui_Pair);
+    lv_obj_set_width(ui_Status, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Status, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Status, 0);
+    lv_obj_set_y(ui_Status, 4);
+    lv_obj_set_align(ui_Status, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Status, "NOT YET FOUND");
+    lv_obj_set_style_text_color(ui_Status, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Status, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Spinner4 = lv_spinner_create(ui_Pair);
-    //lv_spinner_set_anim_params(ui_Spinner4, 1000, 90);
-    lv_obj_set_width(ui_Spinner4, 37);
-    lv_obj_set_height(ui_Spinner4, 34);
-    lv_obj_set_x(ui_Spinner4, 0);
-    lv_obj_set_y(ui_Spinner4, 45);
-    lv_obj_set_align(ui_Spinner4, LV_ALIGN_CENTER);
-    lv_obj_remove_flag(ui_Spinner4, LV_OBJ_FLAG_CLICKABLE);      /// Flags
-    lv_obj_set_style_arc_width(ui_Spinner4, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_PairBusy = lv_spinner_create(ui_Pair);
+    //lv_spinner_set_anim_params(ui_PairBusy, 1000, 90);
+    lv_obj_set_width(ui_PairBusy, 37);
+    lv_obj_set_height(ui_PairBusy, 34);
+    lv_obj_set_x(ui_PairBusy, 0);
+    lv_obj_set_y(ui_PairBusy, 45);
+    lv_obj_set_align(ui_PairBusy, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_PairBusy, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+    lv_obj_set_style_arc_width(ui_PairBusy, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_Spinner4, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Spinner4, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_width(ui_Spinner4, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_rounded(ui_Spinner4, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_color(ui_PairBusy, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_opa(ui_PairBusy, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_width(ui_PairBusy, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_rounded(ui_PairBusy, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
-    ui_Label12 = lv_label_create(ui_Pair);
-    lv_obj_set_width(ui_Label12, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label12, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label12, 0);
-    lv_obj_set_y(ui_Label12, 87);
-    lv_obj_set_align(ui_Label12, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label12, "LEFT: 60s");
+    ui_PairTimeout = lv_label_create(ui_Pair);
+    lv_obj_set_width(ui_PairTimeout, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_PairTimeout, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_PairTimeout, 0);
+    lv_obj_set_y(ui_PairTimeout, 87);
+    lv_obj_set_align(ui_PairTimeout, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_PairTimeout, "LEFT: 60s");
 
-    ui_Label13 = lv_label_create(ui_Pair);
-    lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label13, 0);
-    lv_obj_set_y(ui_Label13, 44);
-    lv_obj_set_align(ui_Label13, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label13, "PRESS 'PAIR' BUTTON");
-    lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    ui_PressKey = lv_label_create(ui_Pair);
+    lv_obj_set_width(ui_PressKey, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_PressKey, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_PressKey, 0);
+    lv_obj_set_y(ui_PressKey, 44);
+    lv_obj_set_align(ui_PressKey, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_PressKey, "PRESS 'PAIR' BUTTON");
+    lv_obj_add_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);     /// Flags
 
 }
 
@@ -87,11 +87,11 @@ void ui_Pair_screen_destroy(void)
 
     // NULL screen variables
     ui_Pair = NULL;
-    ui_Label9 = NULL;
-    ui_Label10 = NULL;
-    ui_Label11 = NULL;
-    ui_Spinner4 = NULL;
-    ui_Label12 = NULL;
-    ui_Label13 = NULL;
+    ui_PairOperation = NULL;
+    ui_PairSensorName = NULL;
+    ui_Status = NULL;
+    ui_PairBusy = NULL;
+    ui_PairTimeout = NULL;
+    ui_PressKey = NULL;
 
 }

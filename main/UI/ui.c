@@ -32,6 +32,10 @@ void ui_init(void)
     lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
                                                true, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
+    
+    // DO NOT load all images on startup - causes memory exhaustion
+    // Load images on-demand when screens are shown
+    
     ui_Splash_screen_init();
     ui_Main_screen_init();
     ui_Black_screen_init();

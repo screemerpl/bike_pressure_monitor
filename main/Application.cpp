@@ -10,10 +10,12 @@
 #include "driver/gpio.h"       // GPIO configuration for button
 #include "esp_timer.h"         // High-resolution timer for timestamps
 #include "esp_log.h"           // ESP logging
+#include "esp_spiffs.h"        // SPIFFS filesystem
 #include "freertos/FreeRTOS.h" // FreeRTOS primitives
 #include "freertos/task.h"     // Task creation and delays
 #include "lvgl.h"              // LVGL async calls
 #include <NimBLEDevice.h>      // BLE scanning
+#include <dirent.h>            // Directory operations
 
 /// Global button state for ISR and task interaction
 static Application::ButtonState g_buttonState = {};
@@ -73,9 +75,12 @@ Application &Application::instance() {
  *          6. Start LVGL UI system
  */
 void Application::init() {
-	// Set default log level for all components (WARN for normal operation)
-	esp_log_level_set("*", ESP_LOG_WARN);
+	// Set default log level for all components
+	esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI(TAG, "Initializing application...");
+
+	// Initialize SPIFFS for image files
+	initializeSPIFFS();
 
 	// Load configuration from NVS (sensors, brightness, WiFi mode flag)
 	loadConfiguration();
@@ -159,6 +164,54 @@ void Application::loadConfiguration() {
 
 	ESP_LOGI(TAG, "Sensors: Front=%s, Rear=%s, Paired=%d",
 		   state.getFrontAddress().c_str(), state.getRearAddress().c_str(), state.getIsPaired());
+}
+
+/**
+ * @brief Initialize SPIFFS filesystem for image assets
+ * @details Mounts SPIFFS partition at '/spiffs' mount point.
+ *          Used for storing binary-compressed image files from SquareLine.
+ */
+void Application::initializeSPIFFS() {
+	ESP_LOGI(TAG, "Initializing SPIFFS...");
+	
+	esp_vfs_spiffs_conf_t conf = {
+		.base_path = "/spiffs",
+		.partition_label = "storage",
+		.max_files = 10,
+		.format_if_mount_failed = true  // Format if obj_name_len mismatch
+	};
+	
+	esp_err_t ret = esp_vfs_spiffs_register(&conf);
+	if (ret != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+		ESP_LOGE(TAG, "Image files will not be available!");
+		return;
+	}
+	
+	ESP_LOGI(TAG, "SPIFFS mounted successfully at /spiffs");
+	
+	// Get filesystem info
+	size_t total = 0, used = 0;
+	ret = esp_spiffs_info(conf.partition_label, &total, &used);
+	if (ret == ESP_OK) {
+		ESP_LOGI(TAG, "SPIFFS: Total=%u bytes, Used=%u bytes, Available=%u bytes",
+				 (unsigned int)total, (unsigned int)used, (unsigned int)(total - used));
+	} else {
+		ESP_LOGE(TAG, "Failed to get SPIFFS info (%s)", esp_err_to_name(ret));
+	}
+	
+	// List files in /spiffs/assets for debugging
+	DIR* dir = opendir("/spiffs/assets");
+	if (dir == NULL) {
+		ESP_LOGE(TAG, "Failed to open /spiffs/assets directory");
+	} else {
+		ESP_LOGI(TAG, "Files in /spiffs/assets:");
+		struct dirent* entry;
+		while ((entry = readdir(dir)) != NULL) {
+			ESP_LOGI(TAG, "  - %s", entry->d_name);
+		}
+		closedir(dir);
+	}
 }
 
 /**

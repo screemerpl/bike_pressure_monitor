@@ -17,6 +17,7 @@ extern "C" {
 #include "components/ui_comp_hook.h"
 #include "ui_events.h"
 
+#include "ui_img_manager.h"
 
 ///////////////////// SCREENS ////////////////////
 
@@ -27,27 +28,30 @@ extern "C" {
 
 ///////////////////// VARIABLES ////////////////////
 
-// Pair screen elements
-extern lv_obj_t * ui_Label10;
-extern lv_obj_t * ui_Label11;
-extern lv_obj_t * ui_Spinner4;
-extern lv_obj_t * ui_Label12;
-extern lv_obj_t * ui_Label13;
 
 // EVENTS
 
 extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-LV_IMG_DECLARE(ui_img_942102620);    // assets/splashlogo-pms.png
-LV_IMG_DECLARE(ui_img_tpmsred_png);    // assets/tpmsred.png
-LV_IMG_DECLARE(ui_img_tpmsyellow_png);    // assets/tpmsyellow.png
-LV_IMG_DECLARE(ui_img_temp_png);    // assets/temp.png
-LV_IMG_DECLARE(ui_img_btoff_png);    // assets/BToff.png
-LV_IMG_DECLARE(ui_img_bton_png);    // assets/BTon.png
-LV_IMG_DECLARE(ui_img_idle_png);    // assets/idle.png
-LV_IMG_DECLARE(ui_img_alert_png);    // assets/alert.png
-LV_IMG_DECLARE(ui_img_tpmsblack_png);    // assets/tpmsblack.png
+extern lv_image_dsc_t ui_img_1818877690;   // assets/splashlogo-kawa.png
+void ui_img_1818877690_load();
+extern lv_image_dsc_t ui_img_tpmsred_png;   // assets/tpmsred.png
+void ui_img_tpmsred_png_load();
+extern lv_image_dsc_t ui_img_tpmsyellow_png;   // assets/tpmsyellow.png
+void ui_img_tpmsyellow_png_load();
+extern lv_image_dsc_t ui_img_temp_png;   // assets/temp.png
+void ui_img_temp_png_load();
+extern lv_image_dsc_t ui_img_btoff_png;   // assets/BToff.png
+void ui_img_btoff_png_load();
+extern lv_image_dsc_t ui_img_bton_png;   // assets/BTon.png
+void ui_img_bton_png_load();
+extern lv_image_dsc_t ui_img_idle_png;   // assets/idle.png
+void ui_img_idle_png_load();
+extern lv_image_dsc_t ui_img_alert_png;   // assets/alert.png
+void ui_img_alert_png_load();
+extern lv_image_dsc_t ui_img_tpmsblack_png;   // assets/tpmsblack.png
+void ui_img_tpmsblack_png_load();
 
 // UI INIT
 void ui_init(void);

@@ -5,12 +5,12 @@
 
 #include "../ui.h"
 
-lv_obj_t * uic_Spinner3;
+lv_obj_t * uic_SplashSpinner;
 lv_obj_t * uic_Splash;
 lv_obj_t * ui_Splash = NULL;
-lv_obj_t * ui_Label2 = NULL;
-lv_obj_t * ui_Image2 = NULL;
-lv_obj_t * ui_Spinner3 = NULL;
+lv_obj_t * ui_VersionStr = NULL;
+lv_obj_t * ui_LogoImg = NULL;
+lv_obj_t * ui_SplashSpinner = NULL;
 // event funtions
 
 // build funtions
@@ -26,42 +26,40 @@ void ui_Splash_screen_init(void)
     lv_obj_set_style_bg_grad_stop(ui_Splash, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui_Splash, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Label2 = lv_label_create(ui_Splash);
-    lv_obj_set_width(ui_Label2, lv_pct(100));
-    lv_obj_set_height(ui_Label2, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label2, 0);
-    lv_obj_set_y(ui_Label2, 100);
-    lv_obj_set_align(ui_Label2, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label2, "V0.0.1");
-    lv_obj_set_style_text_align(ui_Label2, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_VersionStr = lv_label_create(ui_Splash);
+    lv_obj_set_width(ui_VersionStr, lv_pct(100));
+    lv_obj_set_height(ui_VersionStr, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_VersionStr, 0);
+    lv_obj_set_y(ui_VersionStr, 100);
+    lv_obj_set_align(ui_VersionStr, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_VersionStr, "V0.0.1");
+    lv_obj_set_style_text_align(ui_VersionStr, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Image2 = lv_image_create(ui_Splash);
-    lv_image_set_src(ui_Image2, &ui_img_942102620);
-    lv_obj_set_width(ui_Image2, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Image2, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Image2, 0);
-    lv_obj_set_y(ui_Image2, -24);
-    lv_obj_set_align(ui_Image2, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_Image2, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
-    lv_obj_remove_flag(ui_Image2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_LogoImg = lv_image_create(ui_Splash);
+    lv_obj_set_width(ui_LogoImg, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_height(ui_LogoImg, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_x(ui_LogoImg, 0);
+    lv_obj_set_y(ui_LogoImg, -25);
+    lv_obj_set_align(ui_LogoImg, LV_ALIGN_CENTER);
+    lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
 
-    ui_Spinner3 = lv_spinner_create(ui_Splash);
-    //lv_spinner_set_anim_params(ui_Spinner3, 1000, 90);
-    lv_obj_set_width(ui_Spinner3, 37);
-    lv_obj_set_height(ui_Spinner3, 34);
-    lv_obj_set_x(ui_Spinner3, 0);
-    lv_obj_set_y(ui_Spinner3, 45);
-    lv_obj_set_align(ui_Spinner3, LV_ALIGN_CENTER);
-    lv_obj_remove_flag(ui_Spinner3, LV_OBJ_FLAG_CLICKABLE);      /// Flags
-    lv_obj_set_style_arc_width(ui_Spinner3, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_SplashSpinner = lv_spinner_create(ui_Splash);
+    //lv_spinner_set_anim_params(ui_SplashSpinner, 1000, 90);
+    lv_obj_set_width(ui_SplashSpinner, 37);
+    lv_obj_set_height(ui_SplashSpinner, 34);
+    lv_obj_set_x(ui_SplashSpinner, 0);
+    lv_obj_set_y(ui_SplashSpinner, 45);
+    lv_obj_set_align(ui_SplashSpinner, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_SplashSpinner, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+    lv_obj_set_style_arc_width(ui_SplashSpinner, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_Spinner3, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Spinner3, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_width(ui_Spinner3, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_rounded(ui_Spinner3, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_color(ui_SplashSpinner, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_opa(ui_SplashSpinner, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_width(ui_SplashSpinner, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_arc_rounded(ui_SplashSpinner, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
     uic_Splash = ui_Splash;
-    uic_Spinner3 = ui_Spinner3;
+    uic_SplashSpinner = ui_SplashSpinner;
 
 }
 
@@ -72,9 +70,9 @@ void ui_Splash_screen_destroy(void)
     // NULL screen variables
     uic_Splash = NULL;
     ui_Splash = NULL;
-    ui_Label2 = NULL;
-    ui_Image2 = NULL;
-    uic_Spinner3 = NULL;
-    ui_Spinner3 = NULL;
+    ui_VersionStr = NULL;
+    ui_LogoImg = NULL;
+    uic_SplashSpinner = NULL;
+    ui_SplashSpinner = NULL;
 
 }

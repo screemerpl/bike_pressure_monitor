@@ -16,7 +16,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label2",
+                "strval": "VersionStr",
                 "InheritedType": 10
               },
               {
@@ -169,7 +169,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image2",
+                "strval": "LogoImg",
                 "InheritedType": 10
               },
               {
@@ -289,7 +289,7 @@
               {
                 "nid": 1020,
                 "strtype": "IMAGE/Asset",
-                "strval": "assets/splashlogo-pms.png",
+                "strval": "assets/splashlogo-kawa.png",
                 "InheritedType": 5
               },
               {
@@ -338,12 +338,12 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Spinner3",
+                "strval": "SplashSpinner",
                 "childs": [
                   {
                     "nid": 15,
                     "strtype": "_codename/Codename",
-                    "strval": "Spinner3",
+                    "strval": "SplashSpinner",
                     "InheritedType": 10
                   }
                 ],
@@ -843,7 +843,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label3",
+                "strval": "Pressure1",
                 "InheritedType": 10
               },
               {
@@ -995,7 +995,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label4",
+                "strval": "Pressure2",
                 "InheritedType": 10
               },
               {
@@ -1147,7 +1147,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Arc2",
+                "strval": "Battery1",
                 "InheritedType": 10
               },
               {
@@ -1420,7 +1420,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Arc1",
+                "strval": "Battery2",
                 "InheritedType": 10
               },
               {
@@ -1704,7 +1704,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Spinner1",
+                "strval": "Busy",
                 "InheritedType": 10
               },
               {
@@ -1890,7 +1890,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Bar1",
+                "strval": "BatteryBar1",
                 "InheritedType": 10
               },
               {
@@ -2090,7 +2090,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label5",
+                "strval": "TempText1",
                 "InheritedType": 10
               },
               {
@@ -2227,7 +2227,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label6",
+                "strval": "TempText2",
                 "InheritedType": 10
               },
               {
@@ -2364,7 +2364,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Bar2",
+                "strval": "BatteryBar2",
                 "InheritedType": 10
               },
               {
@@ -2563,7 +2563,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label7",
+                "strval": "BatteryText1",
                 "InheritedType": 10
               },
               {
@@ -2700,7 +2700,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label8",
+                "strval": "BatteryText2",
                 "InheritedType": 10
               },
               {
@@ -2837,7 +2837,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image1",
+                "strval": "TPMSicon1",
                 "InheritedType": 10
               },
               {
@@ -2994,7 +2994,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image3",
+                "strval": "TPMSicon2",
                 "InheritedType": 10
               },
               {
@@ -3151,7 +3151,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image4",
+                "strval": "TempIcon1",
                 "InheritedType": 10
               },
               {
@@ -3309,7 +3309,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image5",
+                "strval": "TempIcon2",
                 "InheritedType": 10
               },
               {
@@ -3466,7 +3466,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image6",
+                "strval": "BTicon1",
                 "InheritedType": 10
               },
               {
@@ -3624,7 +3624,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image7",
+                "strval": "BTicon2",
                 "InheritedType": 10
               },
               {
@@ -3782,7 +3782,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image8",
+                "strval": "Alert1",
                 "InheritedType": 10
               },
               {
@@ -3939,7 +3939,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image9",
+                "strval": "Alert2",
                 "InheritedType": 10
               },
               {
@@ -4096,7 +4096,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Image10",
+                "strval": "Unused1",
                 "InheritedType": 10
               },
               {
@@ -4510,7 +4510,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label9",
+                "strval": "PairOperation",
                 "InheritedType": 10
               },
               {
@@ -4647,7 +4647,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label10",
+                "strval": "PairSensorName",
                 "InheritedType": 10
               },
               {
@@ -4784,7 +4784,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label11",
+                "strval": "Status",
                 "InheritedType": 10
               },
               {
@@ -4941,7 +4941,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Spinner4",
+                "strval": "PairBusy",
                 "InheritedType": 10
               },
               {
@@ -5121,7 +5121,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label12",
+                "strval": "PairTimeout",
                 "InheritedType": 10
               },
               {
@@ -5258,7 +5258,7 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label13",
+                "strval": "PressKey",
                 "InheritedType": 10
               },
               {
@@ -5528,7 +5528,7 @@
     "rotation": 0,
     "offset_x": 0,
     "offset_y": 0,
-    "shape": "CIRCLE",
+    "shape": "RECTANGLE",
     "multilang": "DISABLE",
     "description": "",
     "board": "Visual Studio for development on Windows PC",
@@ -5536,7 +5536,7 @@
     "editor_version": "1.5.4",
     "image": "",
     "export_temp_image": false,
-    "force_export_images": false,
+    "force_export_images": true,
     "flat_export": false,
     "advanced_alpha": false,
     "pointfilter": false,
@@ -5545,12 +5545,12 @@
     "theme_color1": 5,
     "theme_color2": 0,
     "custom_variable_prefix": "uic",
-    "backup_cnt": 28,
+    "backup_cnt": 37,
     "autosave_cnt": 0,
     "group_color_cnt": 0,
     "lvgl_version": "9.2.2",
     "callfuncsexport": "C_FILE",
-    "imageexport": "SOURCE",
+    "imageexport": "BINARY_COMPRESSED",
     "lvgl_include_path": "",
     "naming": "Name",
     "naming_force_lowercase": false,

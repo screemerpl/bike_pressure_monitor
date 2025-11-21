@@ -1,5 +1,6 @@
 #include "DisplayManager.h"
 #include "UI/ui.h"
+#include "lvgl_spiffs_driver.h"
 #include <driver/gpio.h>
 #include <driver/ledc.h>
 #include <esp_log.h>
@@ -150,6 +151,9 @@ void DisplayManager::init() {
 
     // Initialize LVGL library
     lv_init();
+
+	// Register LVGL SPIFFS filesystem driver (enables "S:" prefix for image loading)
+	lvgl_spiffs_driver_register();
 
 	// Allocate first LVGL draw buffer (DMA capable memory)
 	lv_draw_buf_mem = (unsigned char *)heap_caps_malloc(

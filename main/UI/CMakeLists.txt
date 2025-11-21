@@ -8,7 +8,9 @@ SET(SOURCES components/ui_comp_label1.c
     ui.c
     components/ui_comp_hook.c
     ui_helpers.c
-    images/ui_img_942102620.c
+    ui_img_manager.c
+    fastlz.c
+    images/ui_img_1818877690.c
     images/ui_img_tpmsred_png.c
     images/ui_img_tpmsyellow_png.c
     images/ui_img_temp_png.c
