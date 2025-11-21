@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "TPMSUtil.h"
+#include "TPMSSensor.h"
 #include <cstdint>
 
 /**
@@ -86,11 +86,9 @@ public:
 	 * @details Updates pressure/temp/battery displays and applies alert blinking.
 	 *          Missing sensors trigger label blinking (500ms period).
 	 */
-	void updateSensorUI(TPMSUtil *frontSensor, TPMSUtil *rearSensor,
-						float frontIdealPSI, float rearIdealPSI,
-						uint32_t currentTime);
-
-	/**
+	void updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSensor,
+					float frontIdealPSI, float rearIdealPSI,
+					uint32_t currentTime);	/**
 	 * @brief Get current alert blink state
 	 * @return true if alert icons should be visible
 	 */
@@ -140,20 +138,16 @@ private:
 	 *          pressure icon (green/yellow/red), BLE status icon,
 	 *          and temperature bar color (blue if <10°C)
 	 */
-	void updateFrontSensorUI(TPMSUtil *frontSensor, float frontIdealPSI,
-							 uint32_t currentTime);
-	
-	/**
+	void updateFrontSensorUI(TPMSSensor *frontSensor, float frontIdealPSI,
+						 uint32_t currentTime);	/**
 	 * @brief Update rear sensor display
 	 * @param rearSensor Rear tire sensor data
 	 * @param rearIdealPSI Target pressure for rear tire
 	 * @param currentTime Current timestamp in milliseconds
 	 * @details Same as updateFrontSensorUI but for rear tire UI elements
 	 */
-	void updateRearSensorUI(TPMSUtil *rearSensor, float rearIdealPSI,
-							uint32_t currentTime);
-	
-	/**
+	void updateRearSensorUI(TPMSSensor *rearSensor, float rearIdealPSI,
+						uint32_t currentTime);	/**
 	 * @brief Clear front sensor display
 	 * @param applyBlink If true, apply 500ms label blink effect
 	 * @details Resets pressure label to "---" and clears temp/battery.
