@@ -36,12 +36,14 @@ void ui_Splash_screen_init(void)
     lv_obj_set_style_text_align(ui_VersionStr, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_LogoImg = lv_image_create(ui_Splash);
-    lv_obj_set_width(ui_LogoImg, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_height(ui_LogoImg, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_LogoImg, 0);
-    lv_obj_set_y(ui_LogoImg, -25);
-    lv_obj_set_align(ui_LogoImg, LV_ALIGN_CENTER);
     lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+    lv_obj_set_width(ui_LogoImg, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_LogoImg, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_LogoImg, 0);
+    lv_obj_set_y(ui_LogoImg, -24);
+    lv_obj_set_align(ui_LogoImg, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_LogoImg, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_remove_flag(ui_LogoImg, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_SplashSpinner = lv_spinner_create(ui_Splash);
     //lv_spinner_set_anim_params(ui_SplashSpinner, 1000, 90);

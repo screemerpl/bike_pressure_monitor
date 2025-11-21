@@ -10,7 +10,7 @@
 #include "Application.h"
 #include "State.h"
 #include "UI/ui.h"
-#include "UI/ui_img_manager.h"
+#include "UIImageLoader.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -113,7 +113,11 @@ void UIController::setWiFiModeLabel() {
  * @details Transitions to splash screen with 1s fade animation
  */
 void UIController::showSplashScreen() {
-	ui_load_splash_images();
+	ui_load_splash_images_wrapper();
+	// Refresh logo image source after loading
+	if (ui_LogoImg && ui_img_1818877690.data) {
+		lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+	}
 	lv_screen_load_anim(ui_Splash, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
@@ -123,8 +127,8 @@ void UIController::showSplashScreen() {
  *          Images are loaded immediately. Frees splash images first to reclaim memory.
  */
 void UIController::showMainScreen() {
-	ui_free_splash_images();  // Free logo to make room for main screen images
-	ui_load_main_images();
+	ui_free_splash_images_wrapper();
+	ui_load_main_images_wrapper();
 	lv_screen_load_anim(ui_Main, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
