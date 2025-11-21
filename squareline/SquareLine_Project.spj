@@ -697,12 +697,12 @@
               {
                 "nid": 10,
                 "strtype": "OBJECT/Name",
-                "strval": "Label1",
+                "strval": "Unit",
                 "childs": [
                   {
                     "nid": 15,
                     "strtype": "_codename/Codename",
-                    "strval": "Label1",
+                    "strval": "Unit",
                     "InheritedType": 10
                   }
                 ],
@@ -1761,6 +1761,12 @@
                 "flags": 1048576,
                 "strtype": "OBJECT/Flags",
                 "InheritedType": 1
+              },
+              {
+                "nid": 100,
+                "strtype": "OBJECT/Hidden",
+                "strval": "True",
+                "InheritedType": 2
               },
               {
                 "nid": 110,
@@ -2862,7 +2868,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  55,
+                  58,
                   -30
                 ],
                 "InheritedType": 7
@@ -3019,7 +3025,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  55,
+                  58,
                   30
                 ],
                 "InheritedType": 7
@@ -3491,7 +3497,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  -55,
+                  -58,
                   -30
                 ],
                 "InheritedType": 7
@@ -3649,7 +3655,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  -55,
+                  -58,
                   30
                 ],
                 "InheritedType": 7
@@ -3807,7 +3813,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  -82,
+                  -93,
                   -4
                 ],
                 "InheritedType": 7
@@ -3964,7 +3970,7 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  82,
+                  93,
                   -4
                 ],
                 "InheritedType": 7
@@ -5539,7 +5545,7 @@
     "theme_color1": 5,
     "theme_color2": 0,
     "custom_variable_prefix": "uic",
-    "backup_cnt": 26,
+    "backup_cnt": 28,
     "autosave_cnt": 0,
     "group_color_cnt": 0,
     "lvgl_version": "9.2.2",

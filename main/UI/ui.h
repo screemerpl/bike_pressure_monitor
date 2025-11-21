@@ -27,6 +27,12 @@ extern "C" {
 
 ///////////////////// VARIABLES ////////////////////
 
+// Pair screen elements
+extern lv_obj_t * ui_Label10;
+extern lv_obj_t * ui_Label11;
+extern lv_obj_t * ui_Spinner4;
+extern lv_obj_t * ui_Label12;
+extern lv_obj_t * ui_Label13;
 
 // EVENTS
 
