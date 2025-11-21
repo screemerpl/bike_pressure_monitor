@@ -7,11 +7,10 @@
 
 #include "UIImageLoader.h"
 #include "UI/ui.h"
+#include "ui_img_utils.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 
-// External function from ui_img_manager.c for transparency handling
-extern "C" void ui_img_apply_indexed_palette_transparency(lv_image_dsc_t* image_dsc);
 
 static const char* TAG = "UIImageLoader";
 
@@ -28,7 +27,6 @@ void ui_load_splash_images_wrapper(void) {
     
     // Load splash logo
     ui_img_1818877690_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_1818877690);
     
     lv_mem_monitor(&mon);
     free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
@@ -50,28 +48,20 @@ void ui_load_main_images_wrapper(void) {
     
     // Load all main screen images
     ui_img_tpmsred_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_tpmsred_png);
     
     ui_img_tpmsyellow_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_tpmsyellow_png);
     
     ui_img_tpmsblack_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_tpmsblack_png);
     
     ui_img_temp_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_temp_png);
     
     ui_img_btoff_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_btoff_png);
     
     ui_img_bton_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_bton_png);
     
     ui_img_idle_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_idle_png);
     
     ui_img_alert_png_load();
-    ui_img_apply_indexed_palette_transparency(&ui_img_alert_png);
     
     lv_mem_monitor(&mon);
     free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);

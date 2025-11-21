@@ -10,12 +10,12 @@
 lv_image_dsc_t ui_img_1818877690 = {
     .header.w = 240,
     .header.h = 74,
-    .header.cf = LV_COLOR_FORMAT_NATIVE,
+    .header.cf = LV_COLOR_FORMAT_NATIVE_WITH_ALPHA,
     .header.magic = LV_IMAGE_HEADER_MAGIC,
 };
 
 void ui_img_1818877690_load()
 {
-    ui_img_1818877690.data = UI_LOAD_IMAGE("S:assets/ui_img_1818877690.bin", 2259, 35520);
-    ui_img_1818877690.data_size = 35520;
+    ui_img_1818877690.data = UI_LOAD_IMAGE("S:assets/ui_img_1818877690.bin", 3638, 53280);
+    ui_img_1818877690.data_size = 53280;
 }

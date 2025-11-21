@@ -8,8 +8,9 @@ file(GLOB_RECURSE UI_SOURCES
 
 # Automatically find all .cpp files in main directory
 file(GLOB APP_SOURCES "*.cpp")
+file(GLOB APP_C_SOURCES "*.c")
 
-idf_component_register(SRCS ${APP_SOURCES}
+idf_component_register(SRCS ${APP_SOURCES} ${APP_C_SOURCES}
                             ${UI_SOURCES}
                      INCLUDE_DIRS "." 
                      REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom esp_http_server esp_netif esp_wifi nvs_flash app_update spiffs)

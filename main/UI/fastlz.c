@@ -23,9 +23,6 @@
 
 #include "ui.h"
 #include "fastlz.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <stdint.h>
 
@@ -59,33 +56,14 @@
 #include <stdint-gcc.h>
 #endif
 
-static int fastlz_memmove(uint8_t* dest, const uint8_t* src, uint32_t count) {
-  /* Validate input parameters */
-  if (dest == NULL) {
-    printf("fastlz_memmove: ERROR - dest pointer is NULL\n");
-    return -1;
-  }
-  
-  if (src == NULL) {
-    printf("fastlz_memmove: ERROR - src pointer is NULL (dest=%p count=%lu)\n", dest, count);
-    return -1;
-  }
-  
-  if (count == 0) {
-    printf("fastlz_memmove: WARNING - count is 0 (dest=%p src=%p)\n", dest, src);
-    return 0;   /* Success: nothing to copy */
-  }
-  
-  /* Perform safe byte-by-byte copy */
-  for (uint32_t i = 0; i < count; i++) {
-    dest[i] = src[i];
-  }
-  
-  return 0;
+static void fastlz_memmove(uint8_t* dest, const uint8_t* src, uint32_t count) {
+  do {
+    *dest++ = *src++;
+  } while (--count);
 }
 
-static int fastlz_memcpy(uint8_t* dest, const uint8_t* src, uint32_t count) {
-  return fastlz_memmove(dest, src, count);
+static void fastlz_memcpy(uint8_t* dest, const uint8_t* src, uint32_t count) {
+  fastlz_memmove(dest, src, count);
 }
 
 #define MAX_L1_DISTANCE 8192
@@ -101,26 +79,6 @@ int fastlz1_decompress(const void* input, int length, void* output, int maxout) 
   const uint8_t* ip_bound = ip_limit - 2;
   uint8_t* op = (uint8_t*)output;
   uint8_t* op_limit = op + maxout;
-  
-  /* Validate main pointers at start */
-  if (input == NULL) {
-    printf("fastlz1_decompress: ERROR - input is NULL\n");
-    return 0;
-  }
-  if (output == NULL) {
-    printf("fastlz1_decompress: ERROR - output is NULL (input=%p length=%d maxout=%d)\n", 
-           input, length, maxout);
-    return 0;
-  }
-  if (length < 1) {
-    printf("fastlz1_decompress: ERROR - invalid input length: %d\n", length);
-    return 0;
-  }
-  if (maxout < 1) {
-    printf("fastlz1_decompress: ERROR - invalid maxout: %d\n", maxout);
-    return 0;
-  }
-  
   uint32_t ctrl = (*ip++) & 31;
 
   while (1) {
@@ -136,41 +94,13 @@ int fastlz1_decompress(const void* input, int length, void* output, int maxout) 
       len += 3;
       FASTLZ_BOUND_CHECK(op + len <= op_limit);
       FASTLZ_BOUND_CHECK(ref >= (uint8_t*)output);
-      
-      /* Extra validation before memmove */
-      if (op == NULL) {
-        printf("fastlz1_decompress: ERROR - op pointer is NULL (ref=%p len=%lu)\n", ref, len);
-        return 0;
-      }
-      if (ref == NULL) {
-        printf("fastlz1_decompress: ERROR - ref pointer is NULL (op=%p len=%lu)\n", op, len);
-        return 0;
-      }
-      
-      if (fastlz_memmove(op, ref, len) < 0) {
-        printf("fastlz1_decompress: ERROR - fastlz_memmove failed at op=%p ref=%p len=%lu\n", op, ref, len);
-        return 0;
-      }
+      fastlz_memmove(op, ref, len);
       op += len;
     } else {
       ctrl++;
       FASTLZ_BOUND_CHECK(op + ctrl <= op_limit);
       FASTLZ_BOUND_CHECK(ip + ctrl <= ip_limit);
-      
-      /* Extra validation before memcpy */
-      if (op == NULL) {
-        printf("fastlz1_decompress: ERROR - op pointer is NULL (ctrl=%lu)\n", ctrl);
-        return 0;
-      }
-      if (ip == NULL) {
-        printf("fastlz1_decompress: ERROR - ip pointer is NULL (ctrl=%lu)\n", ctrl);
-        return 0;
-      }
-      
-      if (fastlz_memcpy(op, ip, ctrl) < 0) {
-        printf("fastlz1_decompress: ERROR - fastlz_memcpy failed at op=%p ip=%p ctrl=%lu\n", op, ip, ctrl);
-        return 0;
-      }
+      fastlz_memcpy(op, ip, ctrl);
       ip += ctrl;
       op += ctrl;
     }
@@ -189,26 +119,6 @@ int fastlz2_decompress(const void* input, int length, void* output, int maxout) 
   const uint8_t* ip_bound = ip_limit - 2;
   uint8_t* op = (uint8_t*)output;
   uint8_t* op_limit = op + maxout;
-  
-  /* Validate main pointers at start */
-  if (input == NULL) {
-    printf("fastlz2_decompress: ERROR - input is NULL\n");
-    return 0;
-  }
-  if (output == NULL) {
-    printf("fastlz2_decompress: ERROR - output is NULL (input=%p length=%d maxout=%d)\n", 
-           input, length, maxout);
-    return 0;
-  }
-  if (length < 1) {
-    printf("fastlz2_decompress: ERROR - invalid input length: %d\n", length);
-    return 0;
-  }
-  if (maxout < 1) {
-    printf("fastlz2_decompress: ERROR - invalid maxout: %d\n", maxout);
-    return 0;
-  }
-  
   uint32_t ctrl = (*ip++) & 31;
 
   while (1) {
@@ -238,41 +148,13 @@ int fastlz2_decompress(const void* input, int length, void* output, int maxout) 
 
       FASTLZ_BOUND_CHECK(op + len <= op_limit);
       FASTLZ_BOUND_CHECK(ref >= (uint8_t*)output);
-      
-      /* Extra validation before memmove */
-      if (op == NULL) {
-        printf("fastlz2_decompress: ERROR - op pointer is NULL (ref=%p len=%lu)\n", ref, len);
-        return 0;
-      }
-      if (ref == NULL) {
-        printf("fastlz2_decompress: ERROR - ref pointer is NULL (op=%p len=%lu)\n", op, len);
-        return 0;
-      }
-      
-      if (fastlz_memmove(op, ref, len) < 0) {
-        printf("fastlz2_decompress: ERROR - fastlz_memmove failed at op=%p ref=%p len=%lu\n", op, ref, len);
-        return 0;
-      }
+      fastlz_memmove(op, ref, len);
       op += len;
     } else {
       ctrl++;
       FASTLZ_BOUND_CHECK(op + ctrl <= op_limit);
       FASTLZ_BOUND_CHECK(ip + ctrl <= ip_limit);
-      
-      /* Extra validation before memcpy */
-      if (op == NULL) {
-        printf("fastlz2_decompress: ERROR - op pointer is NULL (ctrl=%lu)\n", ctrl);
-        return 0;
-      }
-      if (ip == NULL) {
-        printf("fastlz2_decompress: ERROR - ip pointer is NULL (ctrl=%lu)\n", ctrl);
-        return 0;
-      }
-      
-      if (fastlz_memcpy(op, ip, ctrl) < 0) {
-        printf("fastlz2_decompress: ERROR - fastlz_memcpy failed at op=%p ip=%p ctrl=%lu\n", op, ip, ctrl);
-        return 0;
-      }
+      fastlz_memcpy(op, ip, ctrl);
       ip += ctrl;
       op += ctrl;
     }
@@ -286,54 +168,13 @@ int fastlz2_decompress(const void* input, int length, void* output, int maxout) 
 
 int fastlz_decompress(const void* input, int length, void* output, int maxout) {
   /* magic identifier for compression level */
-  if (input == NULL) {
-    printf("fastlz_decompress: ERROR - input pointer is NULL\n");
-    return 0;
-  }
-  if (length < 1) {
-    printf("fastlz_decompress: ERROR - invalid length: %d (input=%p output=%p)\n", 
-           length, input, output);
-    return 0;
-  }
-  if (maxout < 1) {
-    printf("fastlz_decompress: ERROR - invalid maxout: %d (input=%p output=%p length=%d)\n", 
-           maxout, input, output, length);
-    return 0;
-  }
-  
-  /* Handle NULL output buffer by allocating memory */
-  void* allocated_buffer = NULL;
-  if (output == NULL) {
-    printf("fastlz_decompress: WARNING - output pointer is NULL, allocating buffer (length=%d maxout=%d)\n", 
-           length, maxout);
-    allocated_buffer = malloc(maxout);
-    if (allocated_buffer == NULL) {
-      printf("fastlz_decompress: ERROR - failed to allocate %d bytes for decompression\n", maxout);
-      return 0;
-    }
-    output = allocated_buffer;
-  }
-  
   int level = ((*(const uint8_t*)input) >> 5) + 1;
-  printf("fastlz_decompress: Decompression level %d (input=%p output=%p length=%d maxout=%d)%s\n", 
-         level, input, output, length, maxout,
-         allocated_buffer ? " [ALLOCATED]" : "");
 
-  int result;
-  if (level == 1) result = fastlz1_decompress(input, length, output, maxout);
-  else if (level == 2) result = fastlz2_decompress(input, length, output, maxout);
-  else {
-    printf("fastlz_decompress: ERROR - unknown compression level: %d\n", level);
-    result = 0;
-  }
-  
-  /* Free allocated buffer after decompression */
-  if (allocated_buffer != NULL) {
-    free(allocated_buffer);
-    allocated_buffer = NULL;
-  }
-  
-  return result;
+  if (level == 1) return fastlz1_decompress(input, length, output, maxout);
+  if (level == 2) return fastlz2_decompress(input, length, output, maxout);
+
+  /* unknown level, trigger error */
+  return 0;
 }
 
 
