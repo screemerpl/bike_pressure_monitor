@@ -16,6 +16,7 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 - **WiFi configuration mode** - web-based setup interface
 - **Pairing mode** - guided on-screen sensor pairing process
 - **Configurable ideal pressures** for front and rear tires
+- **Pressure unit selection** - PSI or BAR
 - **Brightness control** - 5 levels (10%, 30%, 50%, 75%, 100%)
 - **Persistent settings** - all configuration stored in NVS (Non-Volatile Storage)
 
@@ -30,14 +31,14 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 ### Web Interface
 - **WiFi AP Mode** - creates "TPMS-Config" access point (password: tpms1234)
 - **Configuration portal** - accessible at http://192.168.4.1
-- **Live sensor view** - real-time JSON API for sensor data
-- **OTA updates** - over-the-air firmware updates via web interface
+- **Live sensor view** - real-time monitoring of detected sensors
+- **Configuration management** - set sensor addresses, ideal pressures, pressure unit
 - **Factory reset** - clear all configuration and restart
 
 ## Hardware
 - **Board:** ESP32-242412N (non-touch version)
 - **MCU:** ESP32-C3 (single core, RISC-V architecture)
-- **Flash:** 4MB
+- **Flash:** 4MB (3MB for firmware, ~960KB for SPIFFS storage)
 - **Display:** LCD with Lovyan GFX driver support
 - **Sensors:** BLE TPMS sensors (front and rear wheels)
 - **Button:** GPIO9 (BOOT button)
@@ -166,12 +167,9 @@ Access the web interface to configure settings:
    - `GET /` - Web interface
    - `GET /api/sensors` - Current sensor data (JSON)
    - `GET /api/config` - Current configuration (JSON)
-   - `POST /api/config` - Update configuration
-   - `POST /api/pair` - Manual sensor pairing
+   - `POST /api/config` - Update configuration (addresses, ideal PSI, pressure unit)
    - `POST /api/clear` - Factory reset
    - `POST /api/restart` - Restart device
-   - `POST /api/ota` - Upload firmware for OTA update
-   - `GET /api/ota/status` - OTA update status
 
 ### Pairing Mode
 
@@ -204,9 +202,13 @@ The device operates in three distinct modes:
 ### 3. WiFi Configuration Mode
 - Starts WiFi AP: TPMS-Config
 - Runs HTTP server on 192.168.4.1
-- Provides web interface for all settings
-- Supports OTA firmware updates
-- Long press button again to exit
+- Provides web interface for configuration:
+  - View discovered TPMS sensors
+  - Configure sensor addresses (front/rear)
+  - Set ideal tire pressures
+  - Select pressure unit (PSI/BAR)
+  - Factory reset option
+- Long press button again to exit and return to normal mode
 
 ## UI Screens
 
@@ -236,10 +238,12 @@ The device operates in three distinct modes:
 The project is optimized to fit within the ESP32-C3's flash constraints:
 
 - **Compiler optimization**: `-Os` (size optimization)
-- **Log levels**: 
-  - Application: WARN
-  - Bootloader: WARN
-  - BLE/NimBLE: WARN
+- **Log levels**: INFO level globally, WARN for bootloader
+- **Flash partition layout**:
+  - NVS: 20KB (0x9000 - 0xE000)
+  - PHY: 4KB (0xE000 - 0x10000)
+  - **Factory (App)**: 3MB (0x10000 - 0x310000) - no OTA, single large firmware partition
+  - **SPIFFS**: ~960KB (0x310000 - 0x400000) - increased storage for large configurations
 - **BLE configuration**:
   - Reduced connection limits
   - Optimized buffer sizes
@@ -308,4 +312,10 @@ Created for motorcycle tire pressure monitoring with ESP32-C3.
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: November 2025  
+**Features**:
+- BLE TPMS sensor monitoring with real-time pressure/temperature display
+- WiFi-based configuration (no OTA - uses larger single firmware partition)
+- LVGL-based touchscreen UI with color-coded pressure indicators
+- Persistent configuration via NVS
+- Up to 3MB available for firmware (no OTA overhead)

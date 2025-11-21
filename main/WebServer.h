@@ -4,7 +4,6 @@
  * @details Singleton HTTP server providing REST API for:
  *          - Device configuration (sensor addresses, target pressures, units)
  *          - Real-time sensor data viewing
- *          - OTA firmware updates
  *          - System restart
  */
 
@@ -118,23 +117,6 @@ private:
 	 * @details Clears wifi_config_mode flag and reboots after 1 second delay
 	 */
 	static esp_err_t handleRestart(httpd_req_t *req);
-	
-	/**
-	 * @brief Handle POST /api/ota/upload - upload firmware binary
-	 * @param req HTTP request (binary body)
-	 * @return ESP_OK on success
-	 * @details Receives firmware binary, validates ESP32 image format,
-	 *          writes to OTA partition, and reboots on success
-	 */
-	static esp_err_t handleOTAUpload(httpd_req_t *req);
-	
-	/**
-	 * @brief Handle GET /api/ota/status - get OTA progress
-	 * @param req HTTP request
-	 * @return ESP_OK on success
-	 * @details Returns JSON with in_progress flag, progress percentage, and error message
-	 */
-	static esp_err_t handleOTAStatus(httpd_req_t *req);
 
 	/**
 	 * @brief Build JSON string with all detected sensors
@@ -160,8 +142,4 @@ private:
 	static esp_err_t sendJSON(httpd_req_t *req, const char *json);
 
 	httpd_handle_t m_server = nullptr;  ///< HTTP server handle
-	
-	static bool s_otaInProgress;       ///< OTA upload in progress flag
-	static int s_otaProgress;          ///< OTA progress percentage (0-100)
-	static std::string s_otaError;     ///< OTA error message
 };

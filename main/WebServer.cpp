@@ -11,17 +11,10 @@
 #include "TPMSSensor.h"
 #include "index_html.h"
 #include "esp_log.h"
-#include "esp_ota_ops.h"
-#include "esp_app_format.h"
 #include <cstdio>
 #include <cstring>
 
 static const char *TAG = "WebServer";
-
-// OTA static members initialization
-bool WebServer::s_otaInProgress = false;
-int WebServer::s_otaProgress = 0;
-std::string WebServer::s_otaError = "";
 
 /**
  * @brief Get singleton instance
@@ -60,7 +53,7 @@ bool WebServer::start() {
 
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.stack_size = 12288; // Increased stack for larger HTML
-	config.max_uri_handlers = 10; // Increased for OTA handlers
+	config.max_uri_handlers = 8; // API handlers
 	config.lru_purge_enable = true;
 	config.recv_wait_timeout = 10;
 	config.send_wait_timeout = 10;
@@ -103,22 +96,10 @@ bool WebServer::start() {
 	httpd_register_uri_handler(m_server, &api_clear);
 
 	httpd_uri_t api_restart = {.uri = "/api/restart",
-							   .method = HTTP_POST,
-							   .handler = handleRestart,
-							   .user_ctx = nullptr};
+						   .method = HTTP_POST,
+						   .handler = handleRestart,
+						   .user_ctx = nullptr};
 	httpd_register_uri_handler(m_server, &api_restart);
-
-	httpd_uri_t api_ota_upload = {.uri = "/api/ota/upload",
-								  .method = HTTP_POST,
-								  .handler = handleOTAUpload,
-								  .user_ctx = nullptr};
-	httpd_register_uri_handler(m_server, &api_ota_upload);
-
-	httpd_uri_t api_ota_status = {.uri = "/api/ota/status",
-								  .method = HTTP_GET,
-								  .handler = handleOTAStatus,
-								  .user_ctx = nullptr};
-	httpd_register_uri_handler(m_server, &api_ota_status);
 
 	ESP_LOGI(TAG, "HTTP server started successfully");
 	return true;
@@ -435,143 +416,5 @@ esp_err_t WebServer::sendJSON(httpd_req_t *req, const char *json) {
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 	httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
-}
-
-/**
- * @brief Handle POST /api/ota/upload - upload firmware binary
- * @param req HTTP request (binary body)
- * @return ESP_OK on success
- * @details OTA update process:
- *          1. Find next OTA partition (esp_ota_get_next_update_partition)
- *          2. Begin OTA operation (esp_ota_begin)
- *          3. Receive firmware binary in 1KB chunks
- *          4. Write chunks to OTA partition (esp_ota_write)
- *          5. Update progress percentage (logged every 10%)
- *          6. Finalize OTA (esp_ota_end)
- *          7. Set new boot partition (esp_ota_set_boot_partition)
- *          8. Send success response
- *          9. Restart device after 2 seconds
- *          
- *          On error: Aborts OTA, sets error message, returns failure
- */
-esp_err_t WebServer::handleOTAUpload(httpd_req_t *req) {
-	ESP_LOGI(TAG, "OTA upload started");
-	
-	s_otaInProgress = true;
-	s_otaProgress = 0;
-	s_otaError = "";
-	
-	esp_ota_handle_t ota_handle;
-	const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-	
-	if (update_partition == NULL) {
-		ESP_LOGE(TAG, "No OTA partition found");
-		s_otaError = "No OTA partition available";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No OTA partition");
-		return ESP_FAIL;
-	}
-	
-	ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%lx", 
-			 update_partition->subtype, update_partition->address);
-	
-	esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &ota_handle);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_begin failed: %s", esp_err_to_name(err));
-		s_otaError = "OTA begin failed";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA begin failed");
-		return ESP_FAIL;
-	}
-	
-	char buf[1024];
-	int received;
-	int total_received = 0;
-	int content_length = req->content_len;
-	
-	ESP_LOGI(TAG, "Expected firmware size: %d bytes", content_length);
-	
-	while (total_received < content_length) {
-		received = httpd_req_recv(req, buf, sizeof(buf));
-		
-		if (received <= 0) {
-			if (received == HTTPD_SOCK_ERR_TIMEOUT) {
-				continue;
-			}
-			ESP_LOGE(TAG, "File receive failed");
-			esp_ota_abort(ota_handle);
-			s_otaError = "File receive failed";
-			s_otaInProgress = false;
-			return ESP_FAIL;
-		}
-		
-		err = esp_ota_write(ota_handle, buf, received);
-		if (err != ESP_OK) {
-			ESP_LOGE(TAG, "esp_ota_write failed: %s", esp_err_to_name(err));
-			esp_ota_abort(ota_handle);
-			s_otaError = "OTA write failed";
-			s_otaInProgress = false;
-			httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA write failed");
-			return ESP_FAIL;
-		}
-		
-		total_received += received;
-		s_otaProgress = (total_received * 100) / content_length;
-		
-		if (s_otaProgress % 10 == 0) {
-			ESP_LOGI(TAG, "OTA progress: %d%%", s_otaProgress);
-		}
-	}
-	
-	err = esp_ota_end(ota_handle);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_end failed: %s", esp_err_to_name(err));
-		s_otaError = "OTA end failed";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA end failed");
-		return ESP_FAIL;
-	}
-	
-	err = esp_ota_set_boot_partition(update_partition);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_set_boot_partition failed: %s", esp_err_to_name(err));
-		s_otaError = "Failed to set boot partition";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Set boot partition failed");
-		return ESP_FAIL;
-	}
-	
-	s_otaProgress = 100;
-	s_otaInProgress = false;
-	ESP_LOGI(TAG, "OTA update successful. Firmware size: %d bytes", total_received);
-	
-	const char *response = "{\"status\":\"success\",\"message\":\"OTA update completed. Device will restart.\"}";
-	sendJSON(req, response);
-	
-	// Restart after 2 seconds
-	vTaskDelay(pdMS_TO_TICKS(2000));
-	esp_restart();
-	
-	return ESP_OK;
-}
-
-/**
- * @brief Handle GET /api/ota/status - get OTA progress
- * @param req HTTP request
- * @return ESP_OK on success
- * @details Returns JSON with:
- *          - in_progress: boolean indicating if OTA is active
- *          - progress: percentage (0-100)
- *          - error: error message string (empty if no error)
- */
-esp_err_t WebServer::handleOTAStatus(httpd_req_t *req) {
-	char json[256];
-	snprintf(json, sizeof(json),
-			 "{\"in_progress\":%s,\"progress\":%d,\"error\":\"%s\"}",
-			 s_otaInProgress ? "true" : "false",
-			 s_otaProgress,
-			 s_otaError.c_str());
-	
-	return sendJSON(req, json);
 }
 
