@@ -15,6 +15,8 @@ idf_component_register(SRCS ${APP_SOURCES} ${APP_C_SOURCES}
                      INCLUDE_DIRS "." 
                      REQUIRES esp-nimble-cpp lovyan-gfx json lvgl-custom esp_http_server esp_netif esp_wifi nvs_flash app_update spiffs)
 
+
+                     
 # Fix LVGL includes before building this component
 idf_build_get_property(python PYTHON)
 add_custom_target(fix_lvgl_includes

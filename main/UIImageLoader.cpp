@@ -7,7 +7,6 @@
 
 #include "UIImageLoader.h"
 #include "UI/ui.h"
-#include "ui_img_utils.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 

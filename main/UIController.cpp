@@ -10,8 +10,6 @@
 #include "Application.h"
 #include "State.h"
 #include "UI/ui.h"
-#include "UIImageLoader.h"
-#include "ui_img_utils.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -114,18 +112,18 @@ void UIController::setWiFiModeLabel() {
  * @details Transitions to splash screen with 1s fade animation
  */
 void UIController::showSplashScreen() {
-	ui_load_splash_images_wrapper();
+	//ui_load_splash_images_wrapper();
 	// Refresh logo image source after loading
 	if (ui_LogoImg && ui_img_1818877690.data) {
 		lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
 		ESP_LOGD("UIController", "ui_img_1818877690.header.cf=%d data_size=%u", ui_img_1818877690.header.cf, (unsigned int)ui_img_1818877690.data_size);
 
-		/* Prefer built-in LVGL colorkey as it's more efficient; fall back to alpha conversion if not supported */
-		if (ui_img_1818877690.data != NULL) ui_img_apply_colorkey_to_obj(ui_LogoImg, &ui_img_1818877690);
+		/* Chroma key support removed - nothing to apply here */
 		ESP_LOGD("UIController", "Applied LVGL colorkey (if available) to ui_LogoImg. header.cf=%d data_size=%u", ui_img_1818877690.header.cf, (unsigned int)ui_img_1818877690.data_size);
 
 		lv_obj_invalidate(ui_LogoImg);
 	}
+
 	lv_screen_load_anim(ui_Splash, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
@@ -135,15 +133,11 @@ void UIController::showSplashScreen() {
  *          Images are loaded immediately. Frees splash images first to reclaim memory.
  */
 void UIController::showMainScreen() {
-	ui_free_splash_images_wrapper();
-	ui_load_main_images_wrapper();
-	/* Apply colorkey to objects once the main images are loaded */
-	if (ui_TPMSicon1 && ui_img_tpmsblack_png.data) ui_img_apply_colorkey_to_obj(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	if (ui_TPMSicon2 && ui_img_tpmsblack_png.data) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	if (ui_BTicon1 && ui_img_btoff_png.data) ui_img_apply_colorkey_to_obj(ui_BTicon1, &ui_img_btoff_png);
-	if (ui_BTicon2 && ui_img_btoff_png.data) ui_img_apply_colorkey_to_obj(ui_BTicon2, &ui_img_btoff_png);
-	if (ui_Alert1 && ui_img_idle_png.data) ui_img_apply_colorkey_to_obj(ui_Alert1, &ui_img_idle_png);
-	if (ui_Alert2 && ui_img_idle_png.data) ui_img_apply_colorkey_to_obj(ui_Alert2, &ui_img_idle_png);
+	clearFrontSensorUI(true);
+	clearRearSensorUI(true);
+	//ui_free_splash_images_wrapper();
+		//ui_load_main_images_wrapper();
+	/* Chroma key removed - no-op for image objects */
 	lv_screen_load_anim(ui_Main, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
@@ -176,17 +170,7 @@ void UIController::initializeLabels() {
 	lv_arc_set_value(ui_Battery2, 0);
 	lv_arc_set_value(ui_Battery1, 0);
 	lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	if (ui_img_tpmsblack_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	if (ui_img_tpmsblack_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
-	if (ui_img_btoff_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_BTicon1, &ui_img_btoff_png);
-	lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
-	if (ui_img_btoff_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_BTicon2, &ui_img_btoff_png);
-	lv_image_set_src(ui_Alert2, &ui_img_idle_png);
-	if (ui_img_idle_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_Alert2, &ui_img_idle_png);
-	lv_image_set_src(ui_Alert1, &ui_img_idle_png);
-	if (ui_img_idle_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_Alert1, &ui_img_idle_png);
+	/* Chroma key removed - image sources set without colorkey */
 }
 
 /**
@@ -344,15 +328,12 @@ void UIController::updateRearSensorUI(TPMSSensor *rearSensor, float rearIdealPSI
 	}
 
 	// Update pressure indicator icon
-	if (rearSensor->getPressurePSI() < rearIdealPSI * 0.75f) {
+		if (rearSensor->getPressurePSI() < rearIdealPSI * 0.75f) {
 		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsred_png);
-		if (ui_img_tpmsred_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsred_png);
 	} else if (rearSensor->getPressurePSI() < rearIdealPSI * 0.9f) {
 		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsyellow_png);
-		if (ui_img_tpmsyellow_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsyellow_png);
 	} else {
 		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-		if (ui_img_tpmsblack_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsblack_png);
 	}
 
 	// Update BLE connection status icon
@@ -395,9 +376,8 @@ void UIController::clearFrontSensorUI(bool applyBlink) {
 	lv_arc_set_value(ui_Battery1, 0);
 	lv_bar_set_value(ui_BatteryBar1, -10, LV_ANIM_ON);
 	lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	if (ui_img_tpmsblack_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon1, &ui_img_tpmsblack_png);
 	lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
-	if (ui_img_btoff_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_BTicon1, &ui_img_btoff_png);
+	/* Chroma key removed - image sources set without colorkey */
 }
 
 /**
@@ -429,9 +409,7 @@ void UIController::clearRearSensorUI(bool applyBlink) {
 	lv_arc_set_value(ui_Battery2, 0);
 	lv_bar_set_value(ui_BatteryBar2, -10, LV_ANIM_ON);
 	lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	if (ui_img_tpmsblack_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_TPMSicon2, &ui_img_tpmsblack_png);
 	lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
-	if (ui_img_btoff_png.data != NULL) ui_img_apply_colorkey_to_obj(ui_BTicon2, &ui_img_btoff_png);
 }
 
 /**
