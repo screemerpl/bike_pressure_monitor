@@ -49,6 +49,18 @@
           255
         ],
         "InheritedType": 0
+      },
+      {
+        "nid": 1000619,
+        "strtype": "THEME_COLOR",
+        "strval": "ColdLow",
+        "intarray": [
+          38,
+          0,
+          255,
+          255
+        ],
+        "InheritedType": 0
       }
     ]
   },
@@ -103,6 +115,19 @@
             255
           ],
           "InheritedType": 0
+        },
+        {
+          "nid": 1000619,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "ColdLow",
+          "intarray": [
+            38,
+            0,
+            255,
+            255
+          ],
+          "InheritedType": 0
         }
       ]
     },
@@ -153,6 +178,18 @@
             40,
             48,
             216,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000619,
+          "strtype": "THEME_COLOR",
+          "strval": "ColdLow",
+          "intarray": [
+            255,
+            0,
+            0,
             255
           ],
           "InheritedType": 0

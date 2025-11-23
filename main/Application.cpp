@@ -284,6 +284,24 @@ void Application::initializeDisplay() {
 	// Apply saved UI theme from configuration (call after UI is initialized)
 	int themeIdx = State::getInstance().getUITheme();
 	ui_theme_set(themeIdx);
+	switch (themeIdx) {
+		case UI_THEME_DEFAULT:
+			ESP_LOGI(TAG, "Applied UI theme: DEFAULT");
+			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			break;
+		case UI_THEME_TOYO:
+			ESP_LOGI(TAG, "Applied UI theme: TOYO");
+			lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+			break;
+		case UI_THEME_HYBRID:
+			ESP_LOGI(TAG, "Applied UI theme: HYBRID");
+			lv_image_set_src(ui_LogoImg, &ui_img_toyotablue_png);
+			break;
+		default:
+			ESP_LOGI(TAG, "Applied UI theme: UNKNOWN (%d)", themeIdx);
+			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			break;
+	}
 	ESP_LOGI(TAG, "Applied UI theme: %d", themeIdx);
 
 	// Set version or WiFi mode label before any screen transitions

@@ -17,6 +17,9 @@ const ui_theme_variable_t _ui_theme_alpha_Standard[3] = {255, 255, 255};
 
 const ui_theme_variable_t _ui_theme_color_Bright[3] = {0x14D900, 0xA82424, 0x2830D8};
 const ui_theme_variable_t _ui_theme_alpha_Bright[3] = {255, 255, 255};
+
+const ui_theme_variable_t _ui_theme_color_Hot[3] = {0x2600FF, 0x2600FF, 0xFF0000};  
+const ui_theme_variable_t _ui_theme_alpha_Hot[3] = {255, 255, 255};
 uint8_t ui_theme_idx = UI_THEME_DEFAULT;
 
 

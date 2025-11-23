@@ -14,6 +14,7 @@ extern "C" {
 #define UI_THEME_COLOR_TEXT 1
 #define UI_THEME_COLOR_STANDARD 2
 #define UI_THEME_COLOR_BRIGHT 3
+#define UI_THEME_COLOR_HOT 4
 
 #define UI_THEME_DEFAULT 0
 
@@ -32,6 +33,9 @@ extern const ui_theme_variable_t _ui_theme_alpha_Standard[3];
 
 extern const ui_theme_variable_t _ui_theme_color_Bright[3];
 extern const ui_theme_variable_t _ui_theme_alpha_Bright[3];
+
+extern const ui_theme_variable_t _ui_theme_color_Hot[3];
+extern const ui_theme_variable_t _ui_theme_alpha_Hot[3];
 
 extern const uint32_t * ui_theme_colors[3];
 extern const uint8_t * ui_theme_alphas[3];
