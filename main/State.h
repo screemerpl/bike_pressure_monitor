@@ -99,6 +99,10 @@ public:
 
 	int getMode() const { return m_mode; }
 	void setMode(int mode) { m_mode = mode; }
+	/** @brief Get current UI theme index */
+	int getUITheme() const { return m_uiTheme; }
+	/** @brief Set current UI theme index */
+	void setUITheme(int theme) { m_uiTheme = theme; }
 
 private:
 	State() = default;                           ///< Private constructor for singleton
@@ -120,6 +124,7 @@ private:
 	std::string m_sensorAddresses[4];                    ///< Array of paired sensor addresses max 4
 	float m_idealPressures[4];                          ///< Array of ideal pressures for up to 4 tires
 	int m_mode = MODE_BIKE;                             ///< Operating mode: bike or car
+	int m_uiTheme = 0;                                  ///< UI theme index (UI_THEME_DEFAULT)
 
 };
 

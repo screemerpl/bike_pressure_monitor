@@ -154,6 +154,13 @@ static const char *index_html = R"HTML(
                 <option value="PSI">PSI</option>
                 <option value="BAR">BAR</option>
             </select>
+                
+                <label class="label">UI Theme:</label>
+                <select id="uiTheme" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+                    <option value="0">Default</option>
+                    <option value="1">Toyo</option>
+                    <option value="2">Hybrid</option>
+                </select>
             
             <button onclick="saveConfig()">💾 Save Configuration</button>
             <button onclick="clearConfig()" class="btn-danger">🗑️ Clear Configuration</button>
@@ -246,6 +253,7 @@ static const char *index_html = R"HTML(
                 addresses: addresses,
                 ideal_psi: ideal_psi,
                 pressure_unit: document.getElementById('pressureUnit').value
+                , theme: parseInt(document.getElementById('uiTheme').value || '0')
             };
 
             try {
@@ -314,6 +322,7 @@ static const char *index_html = R"HTML(
                 document.getElementById('frontPsi').value = ideal[0] || 36;
                 document.getElementById('rearPsi').value = ideal[1] || 42;
                 document.getElementById('pressureUnit').value = config.pressure_unit || 'PSI';
+                document.getElementById('uiTheme').value = (config.ui_theme !== undefined) ? config.ui_theme : (config.theme !== undefined ? config.theme : 0);
             } catch (e) {
                 showStatus('Failed to load config', 'error');
             }

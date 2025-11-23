@@ -10,11 +10,17 @@
 #include "State.h"
 #include "TPMSSensor.h"
 #include "index_html.h"
+#include "UI/ui.h"
+#include "UI/ui_themes.h"
 #include "PairController.h"
 #include "esp_log.h"
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <cstdlib>
+#include "esp_system.h"
+#include "esp_heap_caps.h"
+#include "lvgl.h"
 
 static const char *TAG = "WebServer";
 
@@ -60,10 +66,36 @@ bool WebServer::start() {
 	config.recv_wait_timeout = 10;
 	config.send_wait_timeout = 10;
 
+	// Diagnostic: log free heap before starting server
+	size_t free_heap_before = esp_get_free_heap_size();
+	size_t esp8_free_before = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+	ESP_LOGI(TAG, "HTTP server start: free_heap=%u bytes, free_8bit=%u bytes, stack_size=%u",
+			 static_cast<unsigned int>(free_heap_before),
+			 static_cast<unsigned int>(esp8_free_before),
+			 static_cast<unsigned int>(config.stack_size));
+
 	esp_err_t ret = httpd_start(&m_server, &config);
 	if (ret != ESP_OK) {
 		ESP_LOGE(TAG, "Failed to start server: %s", esp_err_to_name(ret));
-		return false;
+		// Provide helpful guidance: if task creation failed, it may be due to insufficient
+		// contiguous heap to allocate the HTTPD task; try again with a smaller stack size.
+		if (ret == ESP_ERR_HTTPD_TASK) {
+			ESP_LOGW(TAG, "ESP_ERR_HTTPD_TASK - trying fallback with smaller stack size (4096)");
+			config.stack_size = 4096; // fallback to 4 KB stack
+			esp_err_t retry = httpd_start(&m_server, &config);
+			if (retry == ESP_OK) {
+				size_t free_heap_after = esp_get_free_heap_size();
+				size_t esp8_free_after = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+				ESP_LOGI(TAG, "HTTP server started after fallback - free_heap=%u, free_8bit=%u",
+						 static_cast<unsigned int>(free_heap_after),
+						 static_cast<unsigned int>(esp8_free_after));
+			} else {
+				ESP_LOGE(TAG, "Fallback attempt failed: %s", esp_err_to_name(retry));
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 
 	// Register URI handlers
@@ -318,6 +350,32 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 				State::getInstance().setPressureUnit(unit);
 				ESP_LOGI(TAG, "Set pressure_unit: %s", unit.c_str());
 			}
+
+			// UI Theme (numeric index)
+			ptr = strstr(content, "\"ui_theme\":");
+			if (!ptr) ptr = strstr(content, "\"theme\":");
+			if (ptr) {
+				if (strncmp(ptr, "\"ui_theme\":", 11) == 0) ptr += 11;
+				else if (strncmp(ptr, "\"theme\":", 8) == 0) ptr += 8;
+				// Skip whitespace
+				while (*ptr == ' ' || *ptr == '\t') ptr++;
+				int theme = atoi(ptr);
+				if (theme < UI_THEME_DEFAULT) theme = UI_THEME_DEFAULT;
+				if (theme > UI_THEME_HYBRID) theme = UI_THEME_HYBRID;
+				config.setInt("ui_theme", theme);
+				State::getInstance().setUITheme(theme);
+				ESP_LOGI(TAG, "Set ui_theme: %d", theme);
+				// Apply theme asynchronously on LVGL task
+				int *pTheme = (int*)malloc(sizeof(int));
+				if (pTheme) {
+					*pTheme = theme;
+					lv_async_call([](void *arg){
+						int t = *((int*)arg);
+						ui_theme_set((uint8_t)t);
+						free(arg);
+					}, pTheme);
+				}
+			}
 		}
 	}
 
@@ -486,12 +544,13 @@ std::string WebServer::getConfigJSON() {
 	float p2 = state.getIdealPSI(2);
 	float p3 = state.getIdealPSI(3);
 
+	int theme = state.getUITheme();
 	snprintf(json, sizeof(json),
 			 "{\"mode\":%d,\"addresses\":[\"%s\",\"%s\",\"%s\",\"%s\"],"
-			 "\"ideal_psi\":[%.1f,%.1f,%.1f,%.1f],\"pressure_unit\":\"%s\"}",
+			 "\"ideal_psi\":[%.1f,%.1f,%.1f,%.1f],\"pressure_unit\":\"%s\",\"ui_theme\":%d}",
 			 mode,
 			 a0.c_str(), a1.c_str(), a2.c_str(), a3.c_str(),
-			 p0, p1, p2, p3, state.getPressureUnit().c_str());
+			 p0, p1, p2, p3, state.getPressureUnit().c_str(), theme);
 
 	return std::string(json);
 }

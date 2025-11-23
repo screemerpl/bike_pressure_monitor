@@ -16,6 +16,7 @@
 #include "lvgl.h"              // LVGL async calls
 #include <NimBLEDevice.h>      // BLE scanning
 #include <dirent.h>            // Directory operations
+#include "UI/ui.h"
 
 /// Global button state for ISR and task interaction
 static Application::ButtonState g_buttonState = {};
@@ -91,8 +92,6 @@ void Application::init() {
 		ESP_LOGI(TAG, "Starting in WiFi CONFIG MODE");
 	}
 	
-	// Initialize LCD display and UI controllers
-	initializeDisplay();
 	
 	// Record start timestamp for screen transition timing
 	recordStartTime();
@@ -104,10 +103,15 @@ void Application::init() {
 	
 	// LVGL timer and handler task are started in DisplayManager::init()
 	
+	// If WiFi config mode is selected, start AP and web server first
+	// (do this BEFORE LVGL/draw buffer allocations to reduce heap pressure)
 	if (m_wifiConfigMode) {
 		// WiFi config mode: Start AP and web server for OTA/config
 		startConfigServer();
 	}
+
+	// Initialize LCD display and UI controllers (after starting web server when in WiFi mode)
+	initializeDisplay();
 
 	ESP_LOGI(TAG, "Application initialized successfully");
 }
@@ -178,6 +182,11 @@ void Application::loadConfiguration() {
 	std::string unit;
 	m_config.getString("pressure_unit", unit, "PSI");
 	state.setPressureUnit(unit);
+
+	// Load UI theme preference (integer index -- UI_THEME_DEFAULT, UI_THEME_TOYO, UI_THEME_HYBRID)
+	int uiTheme = UI_THEME_DEFAULT;
+	m_config.getInt("ui_theme", uiTheme, UI_THEME_DEFAULT);
+	state.setUITheme(uiTheme);
 
 	// Load and validate brightness setting (0-4 index into BRIGHTNESS_LEVELS array)
 	int brightnessIndex = DEFAULT_BRIGHTNESS_INDEX;
@@ -271,6 +280,11 @@ void Application::initializeDisplay() {
 	// Get UI controller instances
 	m_uiController = &UIController::instance();
 	m_pairController = &PairController::instance();
+
+	// Apply saved UI theme from configuration (call after UI is initialized)
+	int themeIdx = State::getInstance().getUITheme();
+	ui_theme_set(themeIdx);
+	ESP_LOGI(TAG, "Applied UI theme: %d", themeIdx);
 
 	// Set version or WiFi mode label before any screen transitions
 	if (m_wifiConfigMode) {
