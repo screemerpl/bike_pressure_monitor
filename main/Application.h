@@ -85,6 +85,7 @@ private:
 
 	// Initialization helpers
 	void loadConfiguration();    ///< Load config from NVS (sensors, brightness, etc.)
+	void initializeSPIFFS();     ///< Initialize SPIFFS filesystem for image assets
 	void initializeDisplay();    ///< Initialize LCD, LVGL, and UI controllers
 	void recordStartTime();      ///< Record boot timestamp for screen timing
 	void startUISystem();        ///< Start LVGL tick timer

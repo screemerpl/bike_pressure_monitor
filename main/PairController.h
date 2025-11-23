@@ -16,6 +16,7 @@
 
 #include <cstdint>  // uint32_t
 #include <string>   // std::string
+#include <vector>
 
 /**
  * @class PairController
@@ -81,33 +82,56 @@ private:
 	 * @brief Pairing workflow states
 	 */
 	enum class PairingState {
-		SCANNING_FRONT,         ///< Scanning for front wheel sensor
-		WAITING_FRONT_CONFIRM,  ///< Front sensor found, waiting for button confirm
-		SCANNING_REAR,          ///< Scanning for rear wheel sensor
-		WAITING_REAR_CONFIRM,   ///< Rear sensor found, waiting for button confirm
-		TIMEOUT_FRONT,          ///< Front scan timeout, waiting for retry
-		TIMEOUT_REAR,           ///< Rear scan timeout, waiting for retry
-		COMPLETE                ///< Both sensors paired successfully
+		SCANNING_INDEX,         ///< Scanning for sensor at index (0..n-1)
+		WAITING_INDEX_CONFIRM,  ///< A sensor for the current index has been found, waiting for user confirmation
+		TIMEOUT_INDEX,          ///< Scan for the current index timed out, waiting for retry
+		COMPLETE                ///< All sensors paired successfully
 	};
 
 	/** @brief Update pairing UI based on current state */
 	void updateUI();
 	
+	/** @brief Async callback to update UI (thread-safe) */
+	static void updateUICallback(void *arg);
+	
+	/** @brief Async callback to initialize pairing UI (thread-safe) */
+	static void initUICallback(void *arg);
+	
+	/** @brief Async callback to start front scan UI (thread-safe) */
+	static void startFrontScanUICallback(void *arg);
+	
+	/** @brief Async callback to start rear scan UI (thread-safe) */
+	static void startRearScanUICallback(void *arg);
+	
+	/** @brief Async callback to update timeout text (thread-safe) */
+	static void updateTimeoutCallback(void *arg);
+	
+	/** @brief Async callback to show timeout UI (thread-safe) */
+	static void timeoutUICallback(void *arg);
+	
+	/** @brief Async callback to show scanning UI (thread-safe) */
+	static void startScanningUICallback(void *arg);
+	
+	/** @brief Async callback to show pairing complete UI (thread-safe) */
+	static void pairingCompleteUICallback(void *arg);
+	
 	/** @brief Start front wheel scan with timeout */
 	void startFrontScan();
-	
-	/** @brief Start rear wheel scan with timeout */
 	void startRearScan();
+	/** @brief Start scan for arbitrary index (0..n-1) */
+	void startIndexScan(int index);
 	
 	/** @brief Save paired addresses to NVS and reboot */
 	void savePairingAndReboot();
 
-	PairingState m_state = PairingState::SCANNING_FRONT;  ///< Current pairing state
-	std::string m_selectedFrontAddress;                    ///< Front sensor MAC address
-	std::string m_selectedRearAddress;                     ///< Rear sensor MAC address
+	PairingState m_state = PairingState::SCANNING_INDEX;  ///< Current pairing state
+	std::vector<std::string> m_selectedAddresses;         ///< Selected sensor MAC addresses during pairing
+	int m_expectedCount = 2;                              ///< Number of sensors to pair (2 or 4)
+	int m_currentIndex = 0;                               ///< Current index being paired
 	uint32_t m_scanStartTime = 0;                          ///< Scan start timestamp (ms)
 	uint32_t m_lastSensorCount = 0;                        ///< Previous sensor count for detection
 	bool m_pairingComplete = false;                        ///< Pairing completion flag
+	std::string m_pendingTimeoutText;                      ///< Pending timeout text for async update
 
 	static constexpr uint32_t SCAN_TIMEOUT_MS = 60000;     ///< Scan timeout: 60 seconds
 };

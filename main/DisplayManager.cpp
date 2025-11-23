@@ -1,5 +1,10 @@
 #include "DisplayManager.h"
 #include "UI/ui.h"
+#include "UI/ui_themes.h"
+#include "UIController.h"
+#include "lvgl_spiffs_driver.h"
+#include "lvgl.h"
+#include "esp_heap_caps.h"
 #include <driver/gpio.h>
 #include <driver/ledc.h>
 #include <esp_log.h>
@@ -148,8 +153,11 @@ void DisplayManager::init() {
     m_tft.startWrite();
     m_tft.setColor(0, 0, 0);
 
-    // Initialize LVGL library
-    lv_init();
+	// Initialize LVGL library
+	lv_init();
+
+	// Register LVGL SPIFFS filesystem driver (enables "S:" prefix for image loading)
+	lvgl_spiffs_driver_register();
 
 	// Allocate first LVGL draw buffer (DMA capable memory)
 	lv_draw_buf_mem = (unsigned char *)heap_caps_malloc(
@@ -174,9 +182,36 @@ void DisplayManager::init() {
 	lv_display_set_buffers(disp, lv_draw_buf_mem, lv_draw_buf_mem2,
 						   DRAW_BUF_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
+	// Log memory before initializing UI
+	{
+		lv_mem_monitor_t mon;
+		lv_mem_monitor(&mon);
+		size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+		ESP_LOGI(TAG, "Before ui_init: esp_free_8bit=%zu LVGL total=%zu free=%zu used=%zu (%u%%) biggest_free=%zu frag=%u%%",
+				 free_heap, mon.total_size, mon.free_size, mon.total_size - mon.free_size,
+				 mon.used_pct, mon.free_biggest_size, mon.frag_pct);
+	}
+
+	// Start LVGL tick timer & LVGL handler task before initializing UI
+	// This ensures LVGL runs in its own task context and that any UI
+	// event callbacks and object initializations occur with the LVGL
+	// task active (avoids processing LVGL events on main/application task)
+	UIController::instance().startLVGLTickTimer();
+	UIController::instance().startLVGLTask();
+
 	// Initialize SquareLine Studio generated UI
 	ui_init();
 
+	// Log memory after ui_init
+	{
+		lv_mem_monitor_t mon;
+		lv_mem_monitor(&mon);
+		size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+		ESP_LOGI(TAG, "After ui_init: esp_free_8bit=%zu LVGL total=%zu free=%zu used=%zu (%u%%) biggest_free=%zu frag=%u%%",
+				 free_heap, mon.total_size, mon.free_size, mon.total_size - mon.free_size,
+				 mon.used_pct, mon.free_biggest_size, mon.frag_pct);
+	}
+	ui_theme_set(UI_THEME_DEFAULT);
 	ESP_LOGI(TAG, "Display setup done");
 }
 

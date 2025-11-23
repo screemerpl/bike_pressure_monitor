@@ -8,7 +8,6 @@
  *          - Setting ideal tire pressures (PSI)
  *          - Selecting pressure unit (PSI/BAR)
  *          - Clearing configuration
- *          - OTA firmware upload with progress bar
  *          - Device restart
  *          
  *          Served by WebServer::handleRoot() at GET /
@@ -17,8 +16,6 @@
  *          - GET /api/config - Load current config
  *          - POST /api/config - Save configuration
  *          - POST /api/clear - Clear sensor pairing
- *          - POST /api/ota/upload - Upload firmware
- *          - GET /api/ota/status - Check OTA progress
  *          - POST /api/restart - Reboot device
  *          
  *          Design: Dark theme, responsive, motorcycle-themed (🏍️ icon)
@@ -121,11 +118,30 @@ static const char *index_html = R"HTML(
 
         <div class="card">
             <h2>⚙️ Configuration</h2>
-            <label class="label">Front Wheel Address:</label>
-            <input type="text" id="frontAddr" placeholder="00:00:00:00:00:00">
+                <label class="label">Mode:</label>
+                <select id="appMode" style="width:100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+                    <option value="0">Motorcycle</option>
+                    <option value="1">Car</option>
+                </select>
+
+                <div id="bikeAddrs">
+                    <label class="label">Front Wheel Address:</label>
+                    <input type="text" id="frontAddr" placeholder="00:00:00:00:00:00">
+                
+                    <label class="label">Rear Wheel Address:</label>
+                    <input type="text" id="rearAddr" placeholder="00:00:00:00:00:00">
+                </div>
             
-            <label class="label">Rear Wheel Address:</label>
-            <input type="text" id="rearAddr" placeholder="00:00:00:00:00:00">
+                <div id="carAddrs" style="display:none;">
+                    <label class="label">Front Left Address:</label>
+                    <input type="text" id="addr0" placeholder="00:00:00:00:00:00">
+                    <label class="label">Front Right Address:</label>
+                    <input type="text" id="addr1" placeholder="00:00:00:00:00:00">
+                    <label class="label">Rear Left Address:</label>
+                    <input type="text" id="addr2" placeholder="00:00:00:00:00:00">
+                    <label class="label">Rear Right Address:</label>
+                    <input type="text" id="addr3" placeholder="00:00:00:00:00:00">
+                </div>
             
             <label class="label">Front Ideal PSI:</label>
             <input type="number" id="frontPsi" step="0.1" min="0" max="100">
@@ -138,22 +154,17 @@ static const char *index_html = R"HTML(
                 <option value="PSI">PSI</option>
                 <option value="BAR">BAR</option>
             </select>
+                
+                <label class="label">UI Theme:</label>
+                <select id="uiTheme" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+                    <option value="0">Default</option>
+                    <option value="1">Toyo</option>
+                    <option value="2">Hybrid</option>
+                </select>
             
             <button onclick="saveConfig()">💾 Save Configuration</button>
             <button onclick="clearConfig()" class="btn-danger">🗑️ Clear Configuration</button>
             <button onclick="restartDevice()" class="btn-danger">🔄 Restart Device</button>
-        </div>
-
-        <div class="card">
-            <h2>🔄 Firmware Update (OTA)</h2>
-            <label class="label">Select Firmware File (.bin):</label>
-            <input type="file" id="firmwareFile" accept=".bin" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
-            <button onclick="uploadFirmware()" id="uploadBtn">📤 Upload Firmware</button>
-            <div id="otaProgress" style="display: none; margin-top: 15px;">
-                <div style="background: #555; border-radius: 6px; overflow: hidden; height: 30px;">
-                    <div id="otaProgressBar" style="background: #4CAF50; height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;"></div>
-                </div>
-            </div>
         </div>
 
         <div id="status" class="status" style="display: none;"></div>
@@ -213,28 +224,36 @@ static const char *index_html = R"HTML(
             showLoading(false);
         }
 
-        async function loadConfig() {
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                document.getElementById('frontAddr').value = config.front_address || '';
-                document.getElementById('rearAddr').value = config.rear_address || '';
-                document.getElementById('frontPsi').value = config.front_ideal_psi || 36;
-                document.getElementById('rearPsi').value = config.rear_ideal_psi || 42;
-                document.getElementById('pressureUnit').value = config.pressure_unit || 'PSI';
-            } catch (e) {
-                showStatus('Failed to load config', 'error');
-            }
-        }
-
         async function saveConfig() {
             showLoading(true);
+            const mode = parseInt(document.getElementById('appMode').value);
+            const addresses = [];
+            if (mode === 0) {
+                addresses.push(document.getElementById('frontAddr').value);
+                addresses.push(document.getElementById('rearAddr').value);
+            } else {
+                addresses.push(document.getElementById('addr0').value);
+                addresses.push(document.getElementById('addr1').value);
+                addresses.push(document.getElementById('addr2').value);
+                addresses.push(document.getElementById('addr3').value);
+            }
+            const ideal_psi = [];
+            if (mode === 0) {
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value));
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value));
+            } else {
+                // For now use bike fields as fallback if car UI fields are not present
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value) || 36);
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value) || 36);
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value) || 42);
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value) || 42);
+            }
             const config = {
-                front_address: document.getElementById('frontAddr').value,
-                rear_address: document.getElementById('rearAddr').value,
-                front_ideal_psi: parseFloat(document.getElementById('frontPsi').value),
-                rear_ideal_psi: parseFloat(document.getElementById('rearPsi').value),
+                mode: mode,
+                addresses: addresses,
+                ideal_psi: ideal_psi,
                 pressure_unit: document.getElementById('pressureUnit').value
+                , theme: parseInt(document.getElementById('uiTheme').value || '0')
             };
 
             try {
@@ -256,29 +275,60 @@ static const char *index_html = R"HTML(
         }
 
         function setFront(address) {
-            document.getElementById('frontAddr').value = address;
+            const mode = parseInt(document.getElementById('appMode').value || 0);
+            if (mode === 0) {
+                document.getElementById('frontAddr').value = address;
+            } else {
+                // In car mode assume this is front-left
+                document.getElementById('addr0').value = address;
+            }
             showStatus('Front address set', 'info');
         }
 
         function setRear(address) {
-            document.getElementById('rearAddr').value = address;
+            const mode = parseInt(document.getElementById('appMode').value || 0);
+            if (mode === 0) {
+                document.getElementById('rearAddr').value = address;
+            } else {
+                // In car mode assume this is rear-left
+                document.getElementById('addr2').value = address;
+            }
             showStatus('Rear address set', 'info');
         }
 
-        async function restartDevice() {
-            if (!confirm('Restart device? This will close the configuration portal.')) return;
-            
-            showLoading(true);
+        async function loadConfig() {
             try {
-                await fetch('/api/restart', { method: 'POST' });
-                showStatus('Restarting device...', 'info');
-                setTimeout(() => {
-                    showStatus('Device restarted. Please reconnect.', 'success');
-                }, 2000);
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                // Mode selection
+                const mode = (config.mode !== undefined) ? config.mode : 0;
+                document.getElementById('appMode').value = mode;
+                if (mode == 0) {
+                    document.getElementById('bikeAddrs').style.display = 'block';
+                    document.getElementById('carAddrs').style.display = 'none';
+                } else {
+                    document.getElementById('bikeAddrs').style.display = 'none';
+                    document.getElementById('carAddrs').style.display = 'block';
+                }
+
+                const addrs = config.addresses || [];
+                document.getElementById('frontAddr').value = addrs[0] || '';
+                document.getElementById('rearAddr').value = addrs[1] || '';
+                document.getElementById('addr0').value = addrs[0] || '';
+                document.getElementById('addr1').value = addrs[1] || '';
+                document.getElementById('addr2').value = addrs[2] || '';
+                document.getElementById('addr3').value = addrs[3] || '';
+                const ideal = config.ideal_psi || [];
+                document.getElementById('frontPsi').value = ideal[0] || 36;
+                document.getElementById('rearPsi').value = ideal[1] || 42;
+                document.getElementById('pressureUnit').value = config.pressure_unit || 'PSI';
+                document.getElementById('uiTheme').value = (config.ui_theme !== undefined) ? config.ui_theme : (config.theme !== undefined ? config.theme : 0);
             } catch (e) {
-                showStatus('Restart initiated', 'info');
+                showStatus('Failed to load config', 'error');
             }
         }
+
+        // duplicate saveConfig removed (single saveConfig defined above)
 
         async function clearConfig() {
             if (!confirm('Clear all configuration? This will reset sensor addresses and ideal PSI values.')) return;
@@ -299,81 +349,36 @@ static const char *index_html = R"HTML(
             showLoading(false);
         }
 
-        async function uploadFirmware() {
-            const fileInput = document.getElementById('firmwareFile');
-            const file = fileInput.files[0];
+        async function restartDevice() {
+            if (!confirm('Restart device? This will close the configuration portal.')) return;
             
-            if (!file) {
-                showStatus('Please select a firmware file', 'error');
-                return;
-            }
-            
-            if (!file.name.endsWith('.bin')) {
-                showStatus('Please select a .bin file', 'error');
-                return;
-            }
-            
-            if (!confirm('Upload firmware? Device will restart after update.')) {
-                return;
-            }
-            
-            const uploadBtn = document.getElementById('uploadBtn');
-            const progressDiv = document.getElementById('otaProgress');
-            const progressBar = document.getElementById('otaProgressBar');
-            
-            uploadBtn.disabled = true;
-            progressDiv.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-            
+            showLoading(true);
             try {
-                const formData = new FormData();
-                formData.append('firmware', file);
-                
-                const xhr = new XMLHttpRequest();
-                
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
-                        progressBar.style.width = percent + '%';
-                        progressBar.textContent = percent + '%';
-                    }
-                });
-                
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        progressBar.style.width = '100%';
-                        progressBar.textContent = '100%';
-                        showStatus('Firmware uploaded! Device restarting...', 'success');
-                        setTimeout(() => {
-                            showStatus('Device restarted. Please reconnect.', 'info');
-                        }, 3000);
-                    } else {
-                        showStatus('Upload failed: ' + xhr.statusText, 'error');
-                        uploadBtn.disabled = false;
-                        progressDiv.style.display = 'none';
-                    }
-                });
-                
-                xhr.addEventListener('error', () => {
-                    showStatus('Upload failed: Network error', 'error');
-                    uploadBtn.disabled = false;
-                    progressDiv.style.display = 'none';
-                });
-                
-                xhr.open('POST', '/api/ota/upload');
-                xhr.send(file);
-                
+                await fetch('/api/restart', { method: 'POST' });
+                showStatus('Restarting device...', 'info');
+                setTimeout(() => {
+                    showStatus('Device restarted. Please reconnect.', 'success');
+                }, 2000);
             } catch (e) {
-                showStatus('Upload failed: ' + e.message, 'error');
-                uploadBtn.disabled = false;
-                progressDiv.style.display = 'none';
+                showStatus('Restart initiated', 'info');
             }
         }
 
         // Auto-refresh sensors every 5 seconds
         setInterval(refreshSensors, 5000);
         
+        // Wire UI events
+        document.getElementById('appMode').addEventListener('change', (e) => {
+            const mode = parseInt(e.target.value);
+            if (mode === 0) {
+                document.getElementById('bikeAddrs').style.display = 'block';
+                document.getElementById('carAddrs').style.display = 'none';
+            } else {
+                document.getElementById('bikeAddrs').style.display = 'none';
+                document.getElementById('carAddrs').style.display = 'block';
+            }
+        });
+
         // Initial load
         loadConfig();
         refreshSensors();

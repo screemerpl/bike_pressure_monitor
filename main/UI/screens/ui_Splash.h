@@ -14,12 +14,12 @@ extern "C" {
 extern void ui_Splash_screen_init(void);
 extern void ui_Splash_screen_destroy(void);
 extern lv_obj_t * ui_Splash;
-extern lv_obj_t * ui_Label2;
-extern lv_obj_t * ui_Image2;
-extern lv_obj_t * ui_Spinner3;
+extern lv_obj_t * ui_VersionStr;
+extern lv_obj_t * ui_LogoImg;
+extern lv_obj_t * ui_SplashSpinner;
 // CUSTOM VARIABLES
 extern lv_obj_t * uic_Splash;
-extern lv_obj_t * uic_Spinner3;
+extern lv_obj_t * uic_SplashSpinner;
 
 #ifdef __cplusplus
 } /*extern "C"*/

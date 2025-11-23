@@ -10,18 +10,19 @@
 #include "State.h"
 #include "TPMSSensor.h"
 #include "index_html.h"
+#include "UI/ui.h"
+#include "UI/ui_themes.h"
+#include "PairController.h"
 #include "esp_log.h"
-#include "esp_ota_ops.h"
-#include "esp_app_format.h"
 #include <cstdio>
 #include <cstring>
+#include <vector>
+#include <cstdlib>
+#include "esp_system.h"
+#include "esp_heap_caps.h"
+#include "lvgl.h"
 
 static const char *TAG = "WebServer";
-
-// OTA static members initialization
-bool WebServer::s_otaInProgress = false;
-int WebServer::s_otaProgress = 0;
-std::string WebServer::s_otaError = "";
 
 /**
  * @brief Get singleton instance
@@ -60,15 +61,41 @@ bool WebServer::start() {
 
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.stack_size = 12288; // Increased stack for larger HTML
-	config.max_uri_handlers = 10; // Increased for OTA handlers
+	config.max_uri_handlers = 8; // API handlers
 	config.lru_purge_enable = true;
 	config.recv_wait_timeout = 10;
 	config.send_wait_timeout = 10;
 
+	// Diagnostic: log free heap before starting server
+	size_t free_heap_before = esp_get_free_heap_size();
+	size_t esp8_free_before = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+	ESP_LOGI(TAG, "HTTP server start: free_heap=%u bytes, free_8bit=%u bytes, stack_size=%u",
+			 static_cast<unsigned int>(free_heap_before),
+			 static_cast<unsigned int>(esp8_free_before),
+			 static_cast<unsigned int>(config.stack_size));
+
 	esp_err_t ret = httpd_start(&m_server, &config);
 	if (ret != ESP_OK) {
 		ESP_LOGE(TAG, "Failed to start server: %s", esp_err_to_name(ret));
-		return false;
+		// Provide helpful guidance: if task creation failed, it may be due to insufficient
+		// contiguous heap to allocate the HTTPD task; try again with a smaller stack size.
+		if (ret == ESP_ERR_HTTPD_TASK) {
+			ESP_LOGW(TAG, "ESP_ERR_HTTPD_TASK - trying fallback with smaller stack size (4096)");
+			config.stack_size = 4096; // fallback to 4 KB stack
+			esp_err_t retry = httpd_start(&m_server, &config);
+			if (retry == ESP_OK) {
+				size_t free_heap_after = esp_get_free_heap_size();
+				size_t esp8_free_after = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+				ESP_LOGI(TAG, "HTTP server started after fallback - free_heap=%u, free_8bit=%u",
+						 static_cast<unsigned int>(free_heap_after),
+						 static_cast<unsigned int>(esp8_free_after));
+			} else {
+				ESP_LOGE(TAG, "Fallback attempt failed: %s", esp_err_to_name(retry));
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 
 	// Register URI handlers
@@ -103,22 +130,10 @@ bool WebServer::start() {
 	httpd_register_uri_handler(m_server, &api_clear);
 
 	httpd_uri_t api_restart = {.uri = "/api/restart",
-							   .method = HTTP_POST,
-							   .handler = handleRestart,
-							   .user_ctx = nullptr};
+						   .method = HTTP_POST,
+						   .handler = handleRestart,
+						   .user_ctx = nullptr};
 	httpd_register_uri_handler(m_server, &api_restart);
-
-	httpd_uri_t api_ota_upload = {.uri = "/api/ota/upload",
-								  .method = HTTP_POST,
-								  .handler = handleOTAUpload,
-								  .user_ctx = nullptr};
-	httpd_register_uri_handler(m_server, &api_ota_upload);
-
-	httpd_uri_t api_ota_status = {.uri = "/api/ota/status",
-								  .method = HTTP_GET,
-								  .handler = handleOTAStatus,
-								  .user_ctx = nullptr};
-	httpd_register_uri_handler(m_server, &api_ota_status);
 
 	ESP_LOGI(TAG, "HTTP server started successfully");
 	return true;
@@ -225,12 +240,11 @@ esp_err_t WebServer::handleGetConfig(httpd_req_t *req) {
  * @param req HTTP request (JSON body)
  * @return ESP_OK on success
  * @details Parses JSON (simple string search, not robust) and updates:
- *          - front_address: Front sensor MAC address
- *          - rear_address: Rear sensor MAC address
- *          - front_ideal_psi: Target pressure for front tire
- *          - rear_ideal_psi: Target pressure for rear tire
+ *          - mode: 0 (Motorcycle) or 1 (Car)
+ *          - addresses: array of up to 4 MAC address strings
+ *          - ideal_psi: array of float PSI values corresponding to addresses
  *          - pressure_unit: "PSI" or "BAR"
- *          Saves all changes to NVS via ConfigManager
+ *          Saves all changes to NVS via ConfigManager (keys: sensor_address_x, sensor_ideal_psi_x)
  */
 esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	char content[512];
@@ -246,50 +260,84 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	// Parse JSON manually (simple parsing)
 	Application &app = Application::instance();
 	ConfigManager &config = app.getConfig();
-
-	// Extract values (simple string search, not robust JSON parsing)
+	// Extract values (simple JSON parsing without a full JSON parser)
 	char *ptr;
 
-	// Front address
-	ptr = strstr(content, "\"front_address\":\"");
+	// Mode: supports either integer or string name
+	int appMode = MODE_BIKE;
+	ptr = strstr(content, "\"mode\":");
 	if (ptr) {
-		ptr += 17;
-		char *end = strchr(ptr, '"');
-		if (end) {
-			std::string addr(ptr, end - ptr);
-			config.setString("front_address", addr);
-			ESP_LOGI(TAG, "Set front_address: %s", addr.c_str());
+		ptr += 7;
+		// Skip whitespace
+		while (*ptr == ' ' || *ptr == '\t') ptr++;
+		if (*ptr == '"') {
+			ptr++;
+			char *end = strchr(ptr, '"');
+			if (end) {
+				std::string m(ptr, end - ptr);
+				if (m == "car" || m == "MODE_CAR" || m == "1") {
+					appMode = MODE_CAR;
+				} else {
+					appMode = MODE_BIKE;
+				}
+			}
+		} else {
+			// numeric
+			appMode = atoi(ptr);
+		}
+	}
+	// Persist app mode
+	config.setInt("app_mode", appMode);
+	State::getInstance().setMode(appMode);
+	ESP_LOGI(TAG, "Set app_mode: %d", appMode);
+
+	// Parse sensor addresses: expect JSON array: "addresses":["aa:bb","cc:dd",...]
+	std::vector<std::string> addresses;
+	ptr = strstr(content, "\"addresses\":");
+	if (ptr) {
+		ptr = strchr(ptr, '[');
+		if (ptr) {
+			ptr++;
+			while (*ptr && *ptr != ']') {
+				// Find the next quote
+				char *start = strchr(ptr, '"');
+				if (!start) break;
+				start++;
+				char *end = strchr(start, '"');
+				if (!end) break;
+				addresses.emplace_back(start, end - start);
+				ptr = end + 1;
+				// Move past comma
+				char *comma = strchr(ptr, ',');
+				if (!comma) break;
+				ptr = comma + 1;
+			}
 		}
 	}
 
-	// Rear address
-	ptr = strstr(content, "\"rear_address\":\"");
+	// Parse ideal pressures similarly: "ideal_psi":[36.0,42.0,...]
+	std::vector<float> idealPsi;
+	ptr = strstr(content, "\"ideal_psi\":");
 	if (ptr) {
-		ptr += 16;
-		char *end = strchr(ptr, '"');
-		if (end) {
-			std::string addr(ptr, end - ptr);
-			config.setString("rear_address", addr);
-			ESP_LOGI(TAG, "Set rear_address: %s", addr.c_str());
+		ptr = strchr(ptr, '[');
+		if (ptr) {
+			ptr++;
+			while (*ptr && *ptr != ']') {
+				while (*ptr == ' ' || *ptr == '\t' || *ptr == ',') ptr++;
+				char *end = ptr;
+				// read number
+				while (*end && *end != ',' && *end != ']') end++;
+				char temp[32] = {0};
+				size_t len = end - ptr;
+				if (len >= sizeof(temp)) len = sizeof(temp) - 1;
+				strncpy(temp, ptr, len);
+				idealPsi.push_back(static_cast<float>(atof(temp)));
+				ptr = end;
+				if (*ptr == ',') ptr++;
+			}
 		}
 	}
 
-	// Front PSI
-	ptr = strstr(content, "\"front_ideal_psi\":");
-	if (ptr) {
-		float psi = atof(ptr + 18);
-		config.setFloat("front_ideal_psi", psi);
-		ESP_LOGI(TAG, "Set front_ideal_psi: %.1f", psi);
-	}
-
-	// Rear PSI
-	ptr = strstr(content, "\"rear_ideal_psi\":");
-	if (ptr) {
-		float psi = atof(ptr + 17);
-		config.setFloat("rear_ideal_psi", psi);
-		ESP_LOGI(TAG, "Set rear_ideal_psi: %.1f", psi);
-	}
-	
 	// Pressure unit
 	ptr = strstr(content, "\"pressure_unit\":\"");
 	if (ptr) {
@@ -302,6 +350,68 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 				State::getInstance().setPressureUnit(unit);
 				ESP_LOGI(TAG, "Set pressure_unit: %s", unit.c_str());
 			}
+
+			// UI Theme (numeric index)
+			ptr = strstr(content, "\"ui_theme\":");
+			if (!ptr) ptr = strstr(content, "\"theme\":");
+			if (ptr) {
+				if (strncmp(ptr, "\"ui_theme\":", 11) == 0) ptr += 11;
+				else if (strncmp(ptr, "\"theme\":", 8) == 0) ptr += 8;
+				// Skip whitespace
+				while (*ptr == ' ' || *ptr == '\t') ptr++;
+				int theme = atoi(ptr);
+				if (theme < UI_THEME_DEFAULT) theme = UI_THEME_DEFAULT;
+				if (theme > UI_THEME_HYBRID) theme = UI_THEME_HYBRID;
+				config.setInt("ui_theme", theme);
+				State::getInstance().setUITheme(theme);
+				ESP_LOGI(TAG, "Set ui_theme: %d", theme);
+				// Apply theme asynchronously on LVGL task
+				int *pTheme = (int*)malloc(sizeof(int));
+				if (pTheme) {
+					*pTheme = theme;
+					lv_async_call([](void *arg){
+						int t = *((int*)arg);
+						ui_theme_set((uint8_t)t);
+						free(arg);
+					}, pTheme);
+				}
+			}
+		}
+	}
+
+	// Now persist addresses and ideal pressures in the keys that Application.cpp expects
+	if (appMode == MODE_BIKE) {
+		// Bike: keys sensor_address_0 and sensor_address_1
+		for (int i = 0; i < 2; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i);
+			std::string value = (i < (int)addresses.size()) ? addresses[i] : std::string("");
+			config.setString(key, value);
+			State::getInstance().setAddress(i, value);
+			ESP_LOGI(TAG, "Set %s: %s", key.c_str(), value.c_str());
+		}
+		// Ideal pressures for two sensors
+		for (int i = 0; i < 2; ++i) {
+			std::string key = "sensor_ideal_psi_" + std::to_string(i);
+			float psi = (i < (int)idealPsi.size()) ? idealPsi[i] : State::getInstance().getIdealPSI(i);
+			config.setFloat(key, psi);
+			State::getInstance().setIdealPSI(i, psi);
+			ESP_LOGI(TAG, "Set %s: %.1f", key.c_str(), psi);
+		}
+	} else {
+		// Car: Application.cpp loads keys sensor_address_1..4 and sensor_ideal_psi_1..4
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i + 1);
+			std::string value = (i < (int)addresses.size()) ? addresses[i] : std::string("");
+			config.setString(key, value);
+			State::getInstance().setAddress(i, value);
+			ESP_LOGI(TAG, "Set %s: %s", key.c_str(), value.c_str());
+		}
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_ideal_psi_" + std::to_string(i + 1);
+			float psi = (i < (int)idealPsi.size()) ? idealPsi[i] : State::getInstance().getIdealPSI(i);
+			config.setFloat(key, psi);
+			State::getInstance().setIdealPSI(i, psi);
+			ESP_LOGI(TAG, "Set %s: %.1f", key.c_str(), psi);
 		}
 	}
 
@@ -316,8 +426,11 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
  * @details TODO: Not yet implemented - placeholder for future pairing API
  */
 esp_err_t WebServer::handlePairSensor(httpd_req_t *req) {
-	// TODO: Implement pairing logic
-	const char *response = "{\"status\":\"ok\"}";
+	// Start pairing via PairController
+	ESP_LOGI(TAG, "Pairing requested via API");
+	PairController &pc = PairController::instance();
+	pc.init();
+	const char *response = "{\"status\":\"pairing_started\"}";
 	return sendJSON(req, response);
 }
 
@@ -334,13 +447,20 @@ esp_err_t WebServer::handleClearConfig(httpd_req_t *req) {
 	Application &app = Application::instance();
 	ConfigManager &config = app.getConfig();
 
-	// Clear sensor addresses
-	config.setString("front_address", "");
-	config.setString("rear_address", "");
+	// Clear sensor addresses (bike and car keys) and legacy front/rear keys
+	for (int i = 0; i < 4; ++i) {
+		std::string key0 = "sensor_address_" + std::to_string(i);
+		config.setString(key0, "");
+		std::string key1 = "sensor_address_" + std::to_string(i + 1);
+		config.setString(key1, "");
+	}
+	// Legacy keys removed; we persist to sensor_address_* only
 
-	// Reset to default PSI values
-	config.setFloat("front_ideal_psi", 36.0f);
-	config.setFloat("rear_ideal_psi", 42.0f);
+	// Reset to default PSI values for all 4 positions
+	config.setFloat("sensor_ideal_psi_0", 36.0f);
+	config.setFloat("sensor_ideal_psi_1", 42.0f);
+	config.setFloat("sensor_ideal_psi_2", 36.0f);
+	config.setFloat("sensor_ideal_psi_3", 42.0f);
 
 	ESP_LOGI(TAG, "Configuration cleared - addresses reset, PSI set to defaults");
 
@@ -407,17 +527,30 @@ std::string WebServer::getSensorsJSON() {
  * @brief Build JSON string with current configuration
  * @return JSON string
  * @details Reads State singleton and formats as JSON with:
- *          front_address, rear_address, front_ideal_psi, rear_ideal_psi
+ *          mode, addresses[] (4), ideal_psi[] (4), pressure_unit
  */
 std::string WebServer::getConfigJSON() {
 	State &state = State::getInstance();
+	// Return JSON with app mode and addresses/ideal_psi arrays
+	char json[1024];
+	int mode = state.getMode();
+	// Build addresses JSON array with up to 4 sensor addresses (empty strings allowed)
+	const std::string &a0 = state.getAddress(0);
+	const std::string &a1 = state.getAddress(1);
+	const std::string &a2 = state.getAddress(2);
+	const std::string &a3 = state.getAddress(3);
+	float p0 = state.getIdealPSI(0);
+	float p1 = state.getIdealPSI(1);
+	float p2 = state.getIdealPSI(2);
+	float p3 = state.getIdealPSI(3);
 
-	char json[512];
+	int theme = state.getUITheme();
 	snprintf(json, sizeof(json),
-			 "{\"front_address\":\"%s\",\"rear_address\":\"%s\","
-			 "\"front_ideal_psi\":%.1f,\"rear_ideal_psi\":%.1f}",
-			 state.getFrontAddress().c_str(), state.getRearAddress().c_str(),
-			 state.getFrontIdealPSI(), state.getRearIdealPSI());
+			 "{\"mode\":%d,\"addresses\":[\"%s\",\"%s\",\"%s\",\"%s\"],"
+			 "\"ideal_psi\":[%.1f,%.1f,%.1f,%.1f],\"pressure_unit\":\"%s\",\"ui_theme\":%d}",
+			 mode,
+			 a0.c_str(), a1.c_str(), a2.c_str(), a3.c_str(),
+			 p0, p1, p2, p3, state.getPressureUnit().c_str(), theme);
 
 	return std::string(json);
 }
@@ -435,143 +568,5 @@ esp_err_t WebServer::sendJSON(httpd_req_t *req, const char *json) {
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 	httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
-}
-
-/**
- * @brief Handle POST /api/ota/upload - upload firmware binary
- * @param req HTTP request (binary body)
- * @return ESP_OK on success
- * @details OTA update process:
- *          1. Find next OTA partition (esp_ota_get_next_update_partition)
- *          2. Begin OTA operation (esp_ota_begin)
- *          3. Receive firmware binary in 1KB chunks
- *          4. Write chunks to OTA partition (esp_ota_write)
- *          5. Update progress percentage (logged every 10%)
- *          6. Finalize OTA (esp_ota_end)
- *          7. Set new boot partition (esp_ota_set_boot_partition)
- *          8. Send success response
- *          9. Restart device after 2 seconds
- *          
- *          On error: Aborts OTA, sets error message, returns failure
- */
-esp_err_t WebServer::handleOTAUpload(httpd_req_t *req) {
-	ESP_LOGI(TAG, "OTA upload started");
-	
-	s_otaInProgress = true;
-	s_otaProgress = 0;
-	s_otaError = "";
-	
-	esp_ota_handle_t ota_handle;
-	const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-	
-	if (update_partition == NULL) {
-		ESP_LOGE(TAG, "No OTA partition found");
-		s_otaError = "No OTA partition available";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No OTA partition");
-		return ESP_FAIL;
-	}
-	
-	ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%lx", 
-			 update_partition->subtype, update_partition->address);
-	
-	esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &ota_handle);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_begin failed: %s", esp_err_to_name(err));
-		s_otaError = "OTA begin failed";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA begin failed");
-		return ESP_FAIL;
-	}
-	
-	char buf[1024];
-	int received;
-	int total_received = 0;
-	int content_length = req->content_len;
-	
-	ESP_LOGI(TAG, "Expected firmware size: %d bytes", content_length);
-	
-	while (total_received < content_length) {
-		received = httpd_req_recv(req, buf, sizeof(buf));
-		
-		if (received <= 0) {
-			if (received == HTTPD_SOCK_ERR_TIMEOUT) {
-				continue;
-			}
-			ESP_LOGE(TAG, "File receive failed");
-			esp_ota_abort(ota_handle);
-			s_otaError = "File receive failed";
-			s_otaInProgress = false;
-			return ESP_FAIL;
-		}
-		
-		err = esp_ota_write(ota_handle, buf, received);
-		if (err != ESP_OK) {
-			ESP_LOGE(TAG, "esp_ota_write failed: %s", esp_err_to_name(err));
-			esp_ota_abort(ota_handle);
-			s_otaError = "OTA write failed";
-			s_otaInProgress = false;
-			httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA write failed");
-			return ESP_FAIL;
-		}
-		
-		total_received += received;
-		s_otaProgress = (total_received * 100) / content_length;
-		
-		if (s_otaProgress % 10 == 0) {
-			ESP_LOGI(TAG, "OTA progress: %d%%", s_otaProgress);
-		}
-	}
-	
-	err = esp_ota_end(ota_handle);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_end failed: %s", esp_err_to_name(err));
-		s_otaError = "OTA end failed";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA end failed");
-		return ESP_FAIL;
-	}
-	
-	err = esp_ota_set_boot_partition(update_partition);
-	if (err != ESP_OK) {
-		ESP_LOGE(TAG, "esp_ota_set_boot_partition failed: %s", esp_err_to_name(err));
-		s_otaError = "Failed to set boot partition";
-		s_otaInProgress = false;
-		httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Set boot partition failed");
-		return ESP_FAIL;
-	}
-	
-	s_otaProgress = 100;
-	s_otaInProgress = false;
-	ESP_LOGI(TAG, "OTA update successful. Firmware size: %d bytes", total_received);
-	
-	const char *response = "{\"status\":\"success\",\"message\":\"OTA update completed. Device will restart.\"}";
-	sendJSON(req, response);
-	
-	// Restart after 2 seconds
-	vTaskDelay(pdMS_TO_TICKS(2000));
-	esp_restart();
-	
-	return ESP_OK;
-}
-
-/**
- * @brief Handle GET /api/ota/status - get OTA progress
- * @param req HTTP request
- * @return ESP_OK on success
- * @details Returns JSON with:
- *          - in_progress: boolean indicating if OTA is active
- *          - progress: percentage (0-100)
- *          - error: error message string (empty if no error)
- */
-esp_err_t WebServer::handleOTAStatus(httpd_req_t *req) {
-	char json[256];
-	snprintf(json, sizeof(json),
-			 "{\"in_progress\":%s,\"progress\":%d,\"error\":\"%s\"}",
-			 s_otaInProgress ? "true" : "false",
-			 s_otaProgress,
-			 s_otaError.c_str());
-	
-	return sendJSON(req, json);
 }
 

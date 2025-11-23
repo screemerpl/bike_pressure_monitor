@@ -10,10 +10,13 @@
 #include "driver/gpio.h"       // GPIO configuration for button
 #include "esp_timer.h"         // High-resolution timer for timestamps
 #include "esp_log.h"           // ESP logging
+#include "esp_spiffs.h"        // SPIFFS filesystem
 #include "freertos/FreeRTOS.h" // FreeRTOS primitives
 #include "freertos/task.h"     // Task creation and delays
 #include "lvgl.h"              // LVGL async calls
 #include <NimBLEDevice.h>      // BLE scanning
+#include <dirent.h>            // Directory operations
+#include "UI/ui.h"
 
 /// Global button state for ISR and task interaction
 static Application::ButtonState g_buttonState = {};
@@ -73,9 +76,12 @@ Application &Application::instance() {
  *          6. Start LVGL UI system
  */
 void Application::init() {
-	// Set default log level for all components (WARN for normal operation)
-	esp_log_level_set("*", ESP_LOG_WARN);
+	// Set default log level for all components
+	esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI(TAG, "Initializing application...");
+
+	// Initialize SPIFFS for image files
+	initializeSPIFFS();
 
 	// Load configuration from NVS (sensors, brightness, WiFi mode flag)
 	loadConfiguration();
@@ -86,8 +92,6 @@ void Application::init() {
 		ESP_LOGI(TAG, "Starting in WiFi CONFIG MODE");
 	}
 	
-	// Initialize LCD display and UI controllers
-	initializeDisplay();
 	
 	// Record start timestamp for screen transition timing
 	recordStartTime();
@@ -97,13 +101,17 @@ void Application::init() {
 		initBLE();
 	}
 	
-	// Start LVGL tick timer for UI updates
-	startUISystem();
+	// LVGL timer and handler task are started in DisplayManager::init()
 	
+	// If WiFi config mode is selected, start AP and web server first
+	// (do this BEFORE LVGL/draw buffer allocations to reduce heap pressure)
 	if (m_wifiConfigMode) {
 		// WiFi config mode: Start AP and web server for OTA/config
 		startConfigServer();
 	}
+
+	// Initialize LCD display and UI controllers (after starting web server when in WiFi mode)
+	initializeDisplay();
 
 	ESP_LOGI(TAG, "Application initialized successfully");
 }
@@ -123,28 +131,62 @@ void Application::loadConfiguration() {
 	// Initialize ConfigManager and load JSON from NVS
 	m_config.init();
 	ESP_LOGI(TAG, "Loaded JSON Config: %s", m_config.getJsonString().c_str());
-
+	// Load application mode
+	int appMode = MODE_BIKE;
+	m_config.getInt("app_mode", appMode , MODE_BIKE);
+	state.setMode(appMode);
+	ESP_LOGI(TAG, "Application mode: %d", state.getMode());
 	// Load sensor MAC addresses
-	std::string frontAddr, rearAddr;
-	m_config.getString("front_address", frontAddr, "");
-	m_config.getString("rear_address", rearAddr, "");
-	state.setFrontAddress(frontAddr);
-	state.setRearAddress(rearAddr);
+	std::string addresses[4];
 
-	ESP_LOGI(TAG, "Loaded sensor addresses: Front=%s, Rear=%s",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str());
+	if (state.getMode() == MODE_BIKE) {
+		m_config.getString("sensor_address_0", addresses[SENSOR_BIKE_FRONT], "");
+		m_config.getString("sensor_address_1", addresses[SENSOR_BIKE_REAR], "");
+		state.setAddress(SENSOR_BIKE_FRONT, addresses[SENSOR_BIKE_FRONT]);
+		state.setAddress(SENSOR_BIKE_REAR, addresses[SENSOR_BIKE_REAR]);
+		ESP_LOGI(TAG, "Loaded sensor addresses: Front=%s, Rear=%s",
+			   state.getAddress(SENSOR_BIKE_FRONT).c_str(), state.getAddress(SENSOR_BIKE_REAR).c_str());
+	} else if (state.getMode() == MODE_CAR) {
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i + 1);
+			m_config.getString(key, addresses[i], "");
+			state.setAddress(i, addresses[i]);
+		}
+		ESP_LOGI(TAG, "Loaded sensor addresses: FL=%s, FR=%s, RL=%s, RR=%s",
+			   state.getAddress(SENSOR_CAR_FRONT_LEFT).c_str(), state.getAddress(SENSOR_CAR_FRONT_RIGHT).c_str(),
+			   state.getAddress(SENSOR_CAR_REAR_LEFT).c_str(), state.getAddress(SENSOR_CAR_REAR_RIGHT).c_str());
+	}
 
 	// Load ideal pressure values with defaults
-	float frontPSI, rearPSI;
-	m_config.getFloat("front_ideal_psi", frontPSI, DEFAULT_FRONT_PSI);
-	m_config.getFloat("rear_ideal_psi", rearPSI, DEFAULT_REAR_PSI);
-	state.setFrontIdealPSI(frontPSI);
-	state.setRearIdealPSI(rearPSI);
+	float idealPressures[4] = {DEFAULT_FRONT_PSI, DEFAULT_REAR_PSI, DEFAULT_FRONT_PSI, DEFAULT_REAR_PSI};
+	if (state.getMode() == MODE_BIKE) {
+		m_config.getFloat("sensor_ideal_psi_0", idealPressures[SENSOR_BIKE_FRONT], DEFAULT_FRONT_PSI);
+		m_config.getFloat("sensor_ideal_psi_1", idealPressures[SENSOR_BIKE_REAR], DEFAULT_REAR_PSI);
+		state.setIdealPSI(SENSOR_BIKE_FRONT, idealPressures[SENSOR_BIKE_FRONT]);
+		state.setIdealPSI(SENSOR_BIKE_REAR, idealPressures[SENSOR_BIKE_REAR]);
+		ESP_LOGI(TAG, "Loaded ideal pressures: Front=%.1f PSI, Rear=%.1f PSI",
+			   state.getIdealPSI(SENSOR_BIKE_FRONT), state.getIdealPSI(SENSOR_BIKE_REAR));
+	} else if (state.getMode() == MODE_CAR) {
+		for (int i = 0; i < 4; ++i) {
+				std::string key = "sensor_ideal_psi_" + std::to_string(i + 1);
+				m_config.getFloat(key, idealPressures[i], idealPressures[i]);
+				state.setIdealPSI(i, idealPressures[i]);
+		}
+
+		ESP_LOGI(TAG, "Loaded ideal pressures: FL=%.1f PSI, FR=%.1f PSI, RL=%.1f PSI, RR=%.1f PSI",
+			   state.getIdealPSI(SENSOR_CAR_FRONT_LEFT), state.getIdealPSI(SENSOR_CAR_FRONT_RIGHT),
+			   state.getIdealPSI(SENSOR_CAR_REAR_LEFT), state.getIdealPSI(SENSOR_CAR_REAR_RIGHT));
+	}
 	
 	// Load pressure unit preference (PSI or BAR)
 	std::string unit;
 	m_config.getString("pressure_unit", unit, "PSI");
 	state.setPressureUnit(unit);
+
+	// Load UI theme preference (integer index -- UI_THEME_DEFAULT, UI_THEME_TOYO, UI_THEME_HYBRID)
+	int uiTheme = UI_THEME_DEFAULT;
+	m_config.getInt("ui_theme", uiTheme, UI_THEME_DEFAULT);
+	state.setUITheme(uiTheme);
 
 	// Load and validate brightness setting (0-4 index into BRIGHTNESS_LEVELS array)
 	int brightnessIndex = DEFAULT_BRIGHTNESS_INDEX;
@@ -155,10 +197,71 @@ void Application::loadConfiguration() {
 	}
 
 	// Update pairing status based on whether both addresses are configured
-	state.setIsPaired(!state.getFrontAddress().empty() && !state.getRearAddress().empty());
+	if (state.getMode() == MODE_BIKE)
+	{
+		state.setIsPaired(!state.getAddress(SENSOR_BIKE_FRONT).empty() && !state.getAddress(SENSOR_BIKE_REAR).empty());
+	} else if (state.getMode() == MODE_CAR) {
+		bool allPaired = true;
+		for (int i = 0; i < 4; ++i) {
+			if (state.getAddress(i).empty()) {
+				allPaired = false;
+				break;
+			}
+		}
+		state.setIsPaired(allPaired);
+	}
+	
+	ESP_LOGI(TAG, "Pressure unit: %s", state.getPressureUnit().c_str());
+	ESP_LOGI(TAG, "Display brightness index: %d", m_currentBrightnessIndex);
+	ESP_LOGI(TAG, "Sensors paired: %s", state.getIsPaired() ? "YES" : "NO");
+}
 
-	ESP_LOGI(TAG, "Sensors: Front=%s, Rear=%s, Paired=%d",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str(), state.getIsPaired());
+/**
+ * @brief Initialize SPIFFS filesystem for image assets
+ * @details Mounts SPIFFS partition at '/spiffs' mount point.
+ *          Used for storing binary-compressed image files from SquareLine.
+ */
+void Application::initializeSPIFFS() {
+	ESP_LOGI(TAG, "Initializing SPIFFS...");
+	
+	esp_vfs_spiffs_conf_t conf = {
+		.base_path = "/spiffs",
+		.partition_label = "storage",
+		.max_files = 10,
+		.format_if_mount_failed = true  // Format if obj_name_len mismatch
+	};
+	
+	esp_err_t ret = esp_vfs_spiffs_register(&conf);
+	if (ret != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+		ESP_LOGE(TAG, "Image files will not be available!");
+		return;
+	}
+	
+	ESP_LOGI(TAG, "SPIFFS mounted successfully at /spiffs");
+	
+	// Get filesystem info
+	size_t total = 0, used = 0;
+	ret = esp_spiffs_info(conf.partition_label, &total, &used);
+	if (ret == ESP_OK) {
+		ESP_LOGI(TAG, "SPIFFS: Total=%u bytes, Used=%u bytes, Available=%u bytes",
+				 (unsigned int)total, (unsigned int)used, (unsigned int)(total - used));
+	} else {
+		ESP_LOGE(TAG, "Failed to get SPIFFS info (%s)", esp_err_to_name(ret));
+	}
+	
+	// List files in /spiffs/assets for debugging
+	DIR* dir = opendir("/spiffs/assets");
+	if (dir == NULL) {
+		ESP_LOGE(TAG, "Failed to open /spiffs/assets directory");
+	} else {
+		ESP_LOGI(TAG, "Files in /spiffs/assets:");
+		struct dirent* entry;
+		while ((entry = readdir(dir)) != NULL) {
+			ESP_LOGI(TAG, "  - %s", entry->d_name);
+		}
+		closedir(dir);
+	}
 }
 
 /**
@@ -177,6 +280,29 @@ void Application::initializeDisplay() {
 	// Get UI controller instances
 	m_uiController = &UIController::instance();
 	m_pairController = &PairController::instance();
+
+	// Apply saved UI theme from configuration (call after UI is initialized)
+	int themeIdx = State::getInstance().getUITheme();
+	ui_theme_set(themeIdx);
+	switch (themeIdx) {
+		case UI_THEME_DEFAULT:
+			ESP_LOGI(TAG, "Applied UI theme: DEFAULT");
+			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			break;
+		case UI_THEME_TOYO:
+			ESP_LOGI(TAG, "Applied UI theme: TOYO");
+			lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+			break;
+		case UI_THEME_HYBRID:
+			ESP_LOGI(TAG, "Applied UI theme: HYBRID");
+			lv_image_set_src(ui_LogoImg, &ui_img_toyotablue_png);
+			break;
+		default:
+			ESP_LOGI(TAG, "Applied UI theme: UNKNOWN (%d)", themeIdx);
+			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			break;
+	}
+	ESP_LOGI(TAG, "Applied UI theme: %d", themeIdx);
 
 	// Set version or WiFi mode label before any screen transitions
 	if (m_wifiConfigMode) {
@@ -213,8 +339,7 @@ void Application::startUISystem() {
  *          2. Control logic task - handles screen transitions, button input, app state
  */
 void Application::run() {
-	// Start LVGL timer handler task (handles GUI updates at ~30fps)
-	m_uiController->startLVGLTask();
+	// LVGL handler task is started in DisplayManager::init(); do not start it here
 
 	// Create control logic task (handles screen transitions and app state)
 	xTaskCreate(controlLogicTaskWrapper, "control_logic", 2048, this,
@@ -474,8 +599,18 @@ void Application::handleLongPress() {
 	ESP_LOGI(TAG, "Long press detected - clearing sensor addresses and rebooting...");
 	
 	// Clear sensor addresses from configuration
-	m_config.setString("front_address", "");
-	m_config.setString("rear_address", "");
+	// Clear both legacy and new configuration keys for bike/car
+	for (int i = 0; i < 4; ++i) {
+		std::string k0 = "sensor_address_" + std::to_string(i);
+		std::string k1 = "sensor_address_" + std::to_string(i + 1);
+		m_config.setString(k0, "");
+		m_config.setString(k1, "");
+	}
+	// Legacy keys 'front_address'/'rear_address' are deprecated; we only use sensor_address_x
+	m_config.setFloat("sensor_ideal_psi_0", DEFAULT_FRONT_PSI);
+	m_config.setFloat("sensor_ideal_psi_1", DEFAULT_REAR_PSI);
+	m_config.setFloat("sensor_ideal_psi_2", DEFAULT_FRONT_PSI);
+	m_config.setFloat("sensor_ideal_psi_3", DEFAULT_REAR_PSI);
 	
 	// Brief delay for user feedback
 	vTaskDelay(pdMS_TO_TICKS(500));
@@ -602,16 +737,16 @@ void Application::updateLabelsCallback(void *arg) {
 	State &state = State::getInstance();
 	UIController &ui = UIController::instance();
 
-	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
-	TPMSSensor *frontSensor = nullptr;
-	TPMSSensor *rearSensor = nullptr;
+	if (state.getMode() == MODE_BIKE) {
+		TPMSSensor *frontSensor = nullptr;
+		TPMSSensor *rearSensor = nullptr;
 
-	auto frontIt = state.getData().find(state.getFrontAddress());
+	auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
 	if (frontIt != state.getData().end()) {
 		frontSensor = frontIt->second;
 	}
 
-	auto rearIt = state.getData().find(state.getRearAddress());
+	auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
 	if (rearIt != state.getData().end()) {
 		rearSensor = rearIt->second;
 	}
@@ -621,8 +756,11 @@ void Application::updateLabelsCallback(void *arg) {
 	ui.updateAlertBlinkState(currentTime);
 
 	// Update UI with current sensor readings
-	ui.updateSensorUI(frontSensor, rearSensor, state.getFrontIdealPSI(),
-					  state.getRearIdealPSI(), currentTime);
+	ui.updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
+					  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+	}
+	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
+	
 }
 
 /**
