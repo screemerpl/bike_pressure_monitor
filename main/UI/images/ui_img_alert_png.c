@@ -16,6 +16,6 @@ lv_image_dsc_t ui_img_alert_png = {
 
 void ui_img_alert_png_load()
 {
-    ui_img_alert_png.data = UI_LOAD_IMAGE("S:assets/ui_img_alert_png.bin", 1464, 3675);
+    ui_img_alert_png.data = UI_LOAD_IMAGE("S:assets/ui_img_alert_png.bin", 3675);
     ui_img_alert_png.data_size = 3675;
 }

@@ -16,14 +16,17 @@ extern "C" {
 #include "components/ui_comp.h"
 #include "components/ui_comp_hook.h"
 #include "ui_events.h"
+#include "ui_theme_manager.h"
+#include "ui_themes.h"
 
 #include "ui_img_manager.h"
 
 ///////////////////// SCREENS ////////////////////
 
+#include "screens/ui_Black.h"
 #include "screens/ui_Splash.h"
 #include "screens/ui_Main.h"
-#include "screens/ui_Black.h"
+#include "screens/ui_CarMain.h"
 #include "screens/ui_Pair.h"
 
 ///////////////////// VARIABLES ////////////////////
@@ -34,8 +37,7 @@ extern "C" {
 extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-extern lv_image_dsc_t ui_img_1818877690;   // assets/splashlogo-kawa.png
-void ui_img_1818877690_load();
+LV_IMG_DECLARE(ui_img_1818877690);   // assets/splashlogo-kawa.png
 extern lv_image_dsc_t ui_img_tpmsred_png;   // assets/tpmsred.png
 void ui_img_tpmsred_png_load();
 extern lv_image_dsc_t ui_img_tpmsyellow_png;   // assets/tpmsyellow.png
@@ -52,6 +54,9 @@ extern lv_image_dsc_t ui_img_alert_png;   // assets/alert.png
 void ui_img_alert_png_load();
 extern lv_image_dsc_t ui_img_tpmsblack_png;   // assets/tpmsblack.png
 void ui_img_tpmsblack_png_load();
+LV_IMG_DECLARE(ui_img_toyotared_png);   // assets/toyotared.png
+LV_IMG_DECLARE(ui_img_toyotablue_png);   // assets/toyotablue.png
+
 
 // UI INIT
 void ui_init(void);

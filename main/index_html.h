@@ -118,11 +118,30 @@ static const char *index_html = R"HTML(
 
         <div class="card">
             <h2>⚙️ Configuration</h2>
-            <label class="label">Front Wheel Address:</label>
-            <input type="text" id="frontAddr" placeholder="00:00:00:00:00:00">
+                <label class="label">Mode:</label>
+                <select id="appMode" style="width:100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #555; font-size: 16px; background: #3d3d3d; color: #fff;">
+                    <option value="0">Motorcycle</option>
+                    <option value="1">Car</option>
+                </select>
+
+                <div id="bikeAddrs">
+                    <label class="label">Front Wheel Address:</label>
+                    <input type="text" id="frontAddr" placeholder="00:00:00:00:00:00">
+                
+                    <label class="label">Rear Wheel Address:</label>
+                    <input type="text" id="rearAddr" placeholder="00:00:00:00:00:00">
+                </div>
             
-            <label class="label">Rear Wheel Address:</label>
-            <input type="text" id="rearAddr" placeholder="00:00:00:00:00:00">
+                <div id="carAddrs" style="display:none;">
+                    <label class="label">Front Left Address:</label>
+                    <input type="text" id="addr0" placeholder="00:00:00:00:00:00">
+                    <label class="label">Front Right Address:</label>
+                    <input type="text" id="addr1" placeholder="00:00:00:00:00:00">
+                    <label class="label">Rear Left Address:</label>
+                    <input type="text" id="addr2" placeholder="00:00:00:00:00:00">
+                    <label class="label">Rear Right Address:</label>
+                    <input type="text" id="addr3" placeholder="00:00:00:00:00:00">
+                </div>
             
             <label class="label">Front Ideal PSI:</label>
             <input type="number" id="frontPsi" step="0.1" min="0" max="100">
@@ -200,11 +219,32 @@ static const char *index_html = R"HTML(
 
         async function saveConfig() {
             showLoading(true);
+            const mode = parseInt(document.getElementById('appMode').value);
+            const addresses = [];
+            if (mode === 0) {
+                addresses.push(document.getElementById('frontAddr').value);
+                addresses.push(document.getElementById('rearAddr').value);
+            } else {
+                addresses.push(document.getElementById('addr0').value);
+                addresses.push(document.getElementById('addr1').value);
+                addresses.push(document.getElementById('addr2').value);
+                addresses.push(document.getElementById('addr3').value);
+            }
+            const ideal_psi = [];
+            if (mode === 0) {
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value));
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value));
+            } else {
+                // For now use bike fields as fallback if car UI fields are not present
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value) || 36);
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value) || 36);
+                ideal_psi.push(parseFloat(document.getElementById('frontPsi').value) || 42);
+                ideal_psi.push(parseFloat(document.getElementById('rearPsi').value) || 42);
+            }
             const config = {
-                front_address: document.getElementById('frontAddr').value,
-                rear_address: document.getElementById('rearAddr').value,
-                front_ideal_psi: parseFloat(document.getElementById('frontPsi').value),
-                rear_ideal_psi: parseFloat(document.getElementById('rearPsi').value),
+                mode: mode,
+                addresses: addresses,
+                ideal_psi: ideal_psi,
                 pressure_unit: document.getElementById('pressureUnit').value
             };
 
@@ -227,12 +267,24 @@ static const char *index_html = R"HTML(
         }
 
         function setFront(address) {
-            document.getElementById('frontAddr').value = address;
+            const mode = parseInt(document.getElementById('appMode').value || 0);
+            if (mode === 0) {
+                document.getElementById('frontAddr').value = address;
+            } else {
+                // In car mode assume this is front-left
+                document.getElementById('addr0').value = address;
+            }
             showStatus('Front address set', 'info');
         }
 
         function setRear(address) {
-            document.getElementById('rearAddr').value = address;
+            const mode = parseInt(document.getElementById('appMode').value || 0);
+            if (mode === 0) {
+                document.getElementById('rearAddr').value = address;
+            } else {
+                // In car mode assume this is rear-left
+                document.getElementById('addr2').value = address;
+            }
             showStatus('Rear address set', 'info');
         }
 
@@ -240,43 +292,34 @@ static const char *index_html = R"HTML(
             try {
                 const response = await fetch('/api/config');
                 const config = await response.json();
-                document.getElementById('frontAddr').value = config.front_address || '';
-                document.getElementById('rearAddr').value = config.rear_address || '';
-                document.getElementById('frontPsi').value = config.front_ideal_psi || 36;
-                document.getElementById('rearPsi').value = config.rear_ideal_psi || 42;
+                // Mode selection
+                const mode = (config.mode !== undefined) ? config.mode : 0;
+                document.getElementById('appMode').value = mode;
+                if (mode == 0) {
+                    document.getElementById('bikeAddrs').style.display = 'block';
+                    document.getElementById('carAddrs').style.display = 'none';
+                } else {
+                    document.getElementById('bikeAddrs').style.display = 'none';
+                    document.getElementById('carAddrs').style.display = 'block';
+                }
+
+                const addrs = config.addresses || [];
+                document.getElementById('frontAddr').value = addrs[0] || '';
+                document.getElementById('rearAddr').value = addrs[1] || '';
+                document.getElementById('addr0').value = addrs[0] || '';
+                document.getElementById('addr1').value = addrs[1] || '';
+                document.getElementById('addr2').value = addrs[2] || '';
+                document.getElementById('addr3').value = addrs[3] || '';
+                const ideal = config.ideal_psi || [];
+                document.getElementById('frontPsi').value = ideal[0] || 36;
+                document.getElementById('rearPsi').value = ideal[1] || 42;
                 document.getElementById('pressureUnit').value = config.pressure_unit || 'PSI';
             } catch (e) {
                 showStatus('Failed to load config', 'error');
             }
         }
 
-        async function saveConfig() {
-            showLoading(true);
-            const config = {
-                front_address: document.getElementById('frontAddr').value,
-                rear_address: document.getElementById('rearAddr').value,
-                front_ideal_psi: parseFloat(document.getElementById('frontPsi').value),
-                rear_ideal_psi: parseFloat(document.getElementById('rearPsi').value),
-                pressure_unit: document.getElementById('pressureUnit').value
-            };
-
-            try {
-                const response = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
-
-                if (response.ok) {
-                    showStatus('Configuration saved!', 'success');
-                } else {
-                    showStatus('Failed to save config', 'error');
-                }
-            } catch (e) {
-                showStatus('Failed to save config', 'error');
-            }
-            showLoading(false);
-        }
+        // duplicate saveConfig removed (single saveConfig defined above)
 
         async function clearConfig() {
             if (!confirm('Clear all configuration? This will reset sensor addresses and ideal PSI values.')) return;
@@ -315,6 +358,18 @@ static const char *index_html = R"HTML(
         // Auto-refresh sensors every 5 seconds
         setInterval(refreshSensors, 5000);
         
+        // Wire UI events
+        document.getElementById('appMode').addEventListener('change', (e) => {
+            const mode = parseInt(e.target.value);
+            if (mode === 0) {
+                document.getElementById('bikeAddrs').style.display = 'block';
+                document.getElementById('carAddrs').style.display = 'none';
+            } else {
+                document.getElementById('bikeAddrs').style.display = 'none';
+                document.getElementById('carAddrs').style.display = 'block';
+            }
+        });
+
         // Initial load
         loadConfig();
         refreshSensors();

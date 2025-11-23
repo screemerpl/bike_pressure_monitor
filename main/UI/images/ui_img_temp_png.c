@@ -16,6 +16,6 @@ lv_image_dsc_t ui_img_temp_png = {
 
 void ui_img_temp_png_load()
 {
-    ui_img_temp_png.data = UI_LOAD_IMAGE("S:assets/ui_img_temp_png.bin", 613, 3072);
+    ui_img_temp_png.data = UI_LOAD_IMAGE("S:assets/ui_img_temp_png.bin", 3072);
     ui_img_temp_png.data_size = 3072;
 }

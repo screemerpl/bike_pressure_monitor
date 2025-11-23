@@ -20,6 +20,10 @@ void ui_Pair_screen_init(void)
 {
     ui_Pair = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Pair, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_object_set_themeable_style_property(ui_Pair, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Background);
+    ui_object_set_themeable_style_property(ui_Pair, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Background);
 
     ui_PairOperation = lv_label_create(ui_Pair);
     lv_obj_set_width(ui_PairOperation, LV_SIZE_CONTENT);   /// 1
@@ -28,6 +32,10 @@ void ui_Pair_screen_init(void)
     lv_obj_set_y(ui_PairOperation, -50);
     lv_obj_set_align(ui_PairOperation, LV_ALIGN_CENTER);
     lv_label_set_text(ui_PairOperation, "SEARCHING FOR SENSOR");
+    ui_object_set_themeable_style_property(ui_PairOperation, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_PairOperation, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_PairSensorName = lv_label_create(ui_Pair);
     lv_obj_set_width(ui_PairSensorName, LV_SIZE_CONTENT);   /// 1
@@ -36,6 +44,10 @@ void ui_Pair_screen_init(void)
     lv_obj_set_y(ui_PairSensorName, -23);
     lv_obj_set_align(ui_PairSensorName, LV_ALIGN_CENTER);
     lv_label_set_text(ui_PairSensorName, " - FRONT WHEEL -");
+    ui_object_set_themeable_style_property(ui_PairSensorName, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_PairSensorName, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_Status = lv_label_create(ui_Pair);
     lv_obj_set_width(ui_Status, LV_SIZE_CONTENT);   /// 1
@@ -55,10 +67,16 @@ void ui_Pair_screen_init(void)
     lv_obj_set_y(ui_PairBusy, 45);
     lv_obj_set_align(ui_PairBusy, LV_ALIGN_CENTER);
     lv_obj_remove_flag(ui_PairBusy, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+    ui_object_set_themeable_style_property(ui_PairBusy, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_PairBusy, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Standard);
     lv_obj_set_style_arc_width(ui_PairBusy, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_PairBusy, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_PairBusy, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_PairBusy, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_PairBusy, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Bright);
     lv_obj_set_style_arc_width(ui_PairBusy, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_rounded(ui_PairBusy, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
@@ -69,6 +87,10 @@ void ui_Pair_screen_init(void)
     lv_obj_set_y(ui_PairTimeout, 87);
     lv_obj_set_align(ui_PairTimeout, LV_ALIGN_CENTER);
     lv_label_set_text(ui_PairTimeout, "LEFT: 60s");
+    ui_object_set_themeable_style_property(ui_PairTimeout, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_PairTimeout, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_PressKey = lv_label_create(ui_Pair);
     lv_obj_set_width(ui_PressKey, LV_SIZE_CONTENT);   /// 1
@@ -78,6 +100,10 @@ void ui_Pair_screen_init(void)
     lv_obj_set_align(ui_PressKey, LV_ALIGN_CENTER);
     lv_label_set_text(ui_PressKey, "PRESS 'PAIR' BUTTON");
     lv_obj_add_flag(ui_PressKey, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    ui_object_set_themeable_style_property(ui_PressKey, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_PressKey, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
 }
 

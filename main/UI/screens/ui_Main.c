@@ -28,7 +28,6 @@ lv_obj_t * ui_BTicon1 = NULL;
 lv_obj_t * ui_BTicon2 = NULL;
 lv_obj_t * ui_Alert1 = NULL;
 lv_obj_t * ui_Alert2 = NULL;
-lv_obj_t * ui_Unused1 = NULL;
 // event funtions
 
 // build funtions
@@ -37,12 +36,20 @@ void ui_Main_screen_init(void)
 {
     ui_Main = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Main, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_object_set_themeable_style_property(ui_Main, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Background);
+    ui_object_set_themeable_style_property(ui_Main, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Background);
 
     ui_Unit = lv_label_create(ui_Main);
     lv_obj_set_width(ui_Unit, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Unit, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_Unit, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Unit, "PSI");
+    ui_object_set_themeable_style_property(ui_Unit, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_Unit, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_Pressure1 = lv_label_create(ui_Main);
     lv_obj_set_width(ui_Pressure1, LV_SIZE_CONTENT);   /// 1
@@ -51,6 +58,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_Pressure1, -30);
     lv_obj_set_align(ui_Pressure1, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Pressure1, "36.1");
+    ui_object_set_themeable_style_property(ui_Pressure1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_Pressure1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
     lv_obj_set_style_text_font(ui_Pressure1, &lv_font_montserrat_40, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Pressure2 = lv_label_create(ui_Main);
@@ -60,6 +71,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_Pressure2, 30);
     lv_obj_set_align(ui_Pressure2, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Pressure2, "43.5");
+    ui_object_set_themeable_style_property(ui_Pressure2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_Pressure2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
     lv_obj_set_style_text_font(ui_Pressure2, &lv_font_montserrat_40, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Battery1 = lv_arc_create(ui_Main);
@@ -69,16 +84,22 @@ void ui_Main_screen_init(void)
     lv_obj_remove_flag(ui_Battery1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_GESTURE_BUBBLE);      /// Flags
     lv_arc_set_value(ui_Battery1, 80);
     lv_arc_set_bg_angles(ui_Battery1, 240, 300);
-    lv_obj_set_style_arc_color(ui_Battery1, lv_color_hex(0x11FF00), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Battery1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Standard);
     lv_obj_set_style_arc_width(ui_Battery1, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_rounded(ui_Battery1, true, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_Battery1, lv_color_hex(0x4AFF40), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Battery1, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Bright);
 
-    lv_obj_set_style_bg_color(ui_Battery1, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Battery1, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_KNOB | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_Battery1, LV_PART_KNOB | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Text);
     lv_obj_set_style_shadow_width(ui_Battery1, 4, LV_PART_KNOB | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_spread(ui_Battery1, 4, LV_PART_KNOB | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui_Battery1, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
@@ -95,16 +116,22 @@ void ui_Main_screen_init(void)
     lv_arc_set_bg_angles(ui_Battery2, 240, 300);
     lv_arc_set_mode(ui_Battery2, LV_ARC_MODE_REVERSE);
     lv_arc_set_rotation(ui_Battery2, 180);
-    lv_obj_set_style_arc_color(ui_Battery2, lv_color_hex(0x2AFF00), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Battery2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Bright);
     lv_obj_set_style_arc_width(ui_Battery2, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_rounded(ui_Battery2, true, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_Battery2, lv_color_hex(0x40FF4F), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_Battery2, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Standard);
 
-    lv_obj_set_style_bg_color(ui_Battery2, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Battery2, 255, LV_PART_KNOB | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_KNOB | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_Battery2, LV_PART_KNOB | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Text);
     lv_obj_set_style_shadow_width(ui_Battery2, 4, LV_PART_KNOB | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_spread(ui_Battery2, 4, LV_PART_KNOB | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui_Battery2, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
@@ -137,11 +164,15 @@ void ui_Main_screen_init(void)
     lv_obj_set_x(ui_BatteryBar1, 1);
     lv_obj_set_y(ui_BatteryBar1, -62);
     lv_obj_set_align(ui_BatteryBar1, LV_ALIGN_CENTER);
-    lv_obj_set_style_bg_color(ui_BatteryBar1, lv_color_hex(0x183A1B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_BatteryBar1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_BatteryBar1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_BatteryBar1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Standard);
 
-    lv_obj_set_style_bg_color(ui_BatteryBar1, lv_color_hex(0x00FF13), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_BatteryBar1, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_BatteryBar1, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_BatteryBar1, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Bright);
 
     //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
     if(lv_obj_get_style_pad_top(ui_BatteryBar1, LV_PART_MAIN) > 0) lv_obj_set_style_pad_right(ui_BatteryBar1,
@@ -153,6 +184,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_TempText1, 50);
     lv_obj_set_align(ui_TempText1, LV_ALIGN_TOP_RIGHT);
     lv_label_set_text(ui_TempText1, "23.2 C");
+    ui_object_set_themeable_style_property(ui_TempText1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_TempText1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_TempText2 = lv_label_create(ui_Main);
     lv_obj_set_width(ui_TempText2, LV_SIZE_CONTENT);   /// 1
@@ -161,6 +196,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_TempText2, 172);
     lv_obj_set_align(ui_TempText2, LV_ALIGN_TOP_RIGHT);
     lv_label_set_text(ui_TempText2, "23.2 C");
+    ui_object_set_themeable_style_property(ui_TempText2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_TempText2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_BatteryBar2 = lv_bar_create(ui_Main);
     lv_bar_set_range(ui_BatteryBar2, 0, 65);
@@ -171,11 +210,15 @@ void ui_Main_screen_init(void)
     lv_obj_set_x(ui_BatteryBar2, -1);
     lv_obj_set_y(ui_BatteryBar2, 62);
     lv_obj_set_align(ui_BatteryBar2, LV_ALIGN_CENTER);
-    lv_obj_set_style_bg_color(ui_BatteryBar2, lv_color_hex(0x183A1B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_BatteryBar2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_BatteryBar2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_BatteryBar2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Standard);
 
-    lv_obj_set_style_bg_color(ui_BatteryBar2, lv_color_hex(0x00FF13), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_BatteryBar2, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_BatteryBar2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_BatteryBar2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Bright);
 
     //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
     if(lv_obj_get_style_pad_top(ui_BatteryBar2, LV_PART_MAIN) > 0) lv_obj_set_style_pad_right(ui_BatteryBar2,
@@ -187,6 +230,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_BatteryText1, -88);
     lv_obj_set_align(ui_BatteryText1, LV_ALIGN_CENTER);
     lv_label_set_text(ui_BatteryText1, "80%");
+    ui_object_set_themeable_style_property(ui_BatteryText1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_BatteryText1, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_BatteryText2 = lv_label_create(ui_Main);
     lv_obj_set_width(ui_BatteryText2, LV_SIZE_CONTENT);   /// 1
@@ -195,6 +242,10 @@ void ui_Main_screen_init(void)
     lv_obj_set_y(ui_BatteryText2, 88);
     lv_obj_set_align(ui_BatteryText2, LV_ALIGN_CENTER);
     lv_label_set_text(ui_BatteryText2, "80%");
+    ui_object_set_themeable_style_property(ui_BatteryText2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_BatteryText2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
 
     ui_TPMSicon1 = lv_image_create(ui_Main);
     lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsred_png);
@@ -279,17 +330,6 @@ void ui_Main_screen_init(void)
     lv_obj_add_flag(ui_Alert2, LV_OBJ_FLAG_CLICKABLE);     /// Flags
     lv_obj_remove_flag(ui_Alert2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_Unused1 = lv_image_create(ui_Main);
-    lv_image_set_src(ui_Unused1, &ui_img_tpmsblack_png);
-    lv_obj_set_width(ui_Unused1, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Unused1, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Unused1, 55);
-    lv_obj_set_y(ui_Unused1, -30);
-    lv_obj_set_align(ui_Unused1, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_Unused1, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_CLICKABLE);     /// Flags
-    lv_obj_remove_flag(ui_Unused1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_image_set_scale(ui_Unused1, 220);
-
     uic_Main = ui_Main;
     uic_Unit = ui_Unit;
 
@@ -323,6 +363,5 @@ void ui_Main_screen_destroy(void)
     ui_BTicon2 = NULL;
     ui_Alert1 = NULL;
     ui_Alert2 = NULL;
-    ui_Unused1 = NULL;
 
 }

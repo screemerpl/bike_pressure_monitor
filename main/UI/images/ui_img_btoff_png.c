@@ -16,6 +16,6 @@ lv_image_dsc_t ui_img_btoff_png = {
 
 void ui_img_btoff_png_load()
 {
-    ui_img_btoff_png.data = UI_LOAD_IMAGE("S:assets/ui_img_btoff_png.bin", 458, 3072);
+    ui_img_btoff_png.data = UI_LOAD_IMAGE("S:assets/ui_img_btoff_png.bin", 3072);
     ui_img_btoff_png.data_size = 3072;
 }

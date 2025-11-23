@@ -32,6 +32,7 @@ UIController &UIController::instance() {
  *          Required for LVGL animations and timeouts.
  */
 void UIController::startLVGLTickTimer() {
+	if (m_lvgl_timer_started) return;
 	const esp_timer_create_args_t timerArgs = {
 		.callback = &lvglTickCallback, 
 		.arg = nullptr, 
@@ -43,6 +44,7 @@ void UIController::startLVGLTickTimer() {
 	esp_timer_handle_t tickTimer;
 	esp_timer_create(&timerArgs, &tickTimer);
 	esp_timer_start_periodic(tickTimer, 1000); // 1000 µs = 1 ms
+	m_lvgl_timer_started = true;
 }
 
 /**
@@ -51,9 +53,11 @@ void UIController::startLVGLTickTimer() {
  *          Task priority: tskIDLE_PRIORITY + 5
  */
 void UIController::startLVGLTask() {
+	if (m_lvgl_task_started) return;
 	// Create LVGL timer handler task (handles GUI updates)
 	xTaskCreate(lvglTimerTaskWrapper, "lv_timer_task", 4096, this,
 				tskIDLE_PRIORITY + 5, nullptr);
+	m_lvgl_task_started = true;
 }
 
 /**

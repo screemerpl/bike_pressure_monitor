@@ -34,7 +34,6 @@ extern lv_obj_t * ui_BTicon1;
 extern lv_obj_t * ui_BTicon2;
 extern lv_obj_t * ui_Alert1;
 extern lv_obj_t * ui_Alert2;
-extern lv_obj_t * ui_Unused1;
 // CUSTOM VARIABLES
 extern lv_obj_t * uic_Main;
 extern lv_obj_t * uic_Unit;

@@ -19,10 +19,13 @@ void ui_Splash_screen_init(void)
 {
     ui_Splash = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Splash, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(ui_Splash, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Splash, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_grad_color(ui_Splash, lv_color_hex(0x0E4308), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_main_stop(ui_Splash, 100, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Splash, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Background);
+    ui_object_set_themeable_style_property(ui_Splash, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Background);
+    ui_object_set_themeable_style_property(ui_Splash, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_GRAD_COLOR,
+                                           _ui_theme_color_Bright);
+    lv_obj_set_style_bg_main_stop(ui_Splash, 140, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_stop(ui_Splash, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui_Splash, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -33,6 +36,10 @@ void ui_Splash_screen_init(void)
     lv_obj_set_y(ui_VersionStr, 100);
     lv_obj_set_align(ui_VersionStr, LV_ALIGN_CENTER);
     lv_label_set_text(ui_VersionStr, "V0.0.1");
+    ui_object_set_themeable_style_property(ui_VersionStr, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
+                                           _ui_theme_color_Text);
+    ui_object_set_themeable_style_property(ui_VersionStr, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
+                                           _ui_theme_alpha_Text);
     lv_obj_set_style_text_align(ui_VersionStr, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_LogoImg = lv_image_create(ui_Splash);
@@ -53,10 +60,16 @@ void ui_Splash_screen_init(void)
     lv_obj_set_y(ui_SplashSpinner, 45);
     lv_obj_set_align(ui_SplashSpinner, LV_ALIGN_CENTER);
     lv_obj_remove_flag(ui_SplashSpinner, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+    ui_object_set_themeable_style_property(ui_SplashSpinner, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Standard);
+    ui_object_set_themeable_style_property(ui_SplashSpinner, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Standard);
     lv_obj_set_style_arc_width(ui_SplashSpinner, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_arc_color(ui_SplashSpinner, lv_color_hex(0x00FF24), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_arc_opa(ui_SplashSpinner, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_SplashSpinner, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
+                                           _ui_theme_color_Bright);
+    ui_object_set_themeable_style_property(ui_SplashSpinner, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
+                                           _ui_theme_alpha_Bright);
     lv_obj_set_style_arc_width(ui_SplashSpinner, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_rounded(ui_SplashSpinner, true, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 

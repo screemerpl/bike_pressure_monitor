@@ -10,9 +10,11 @@
 #include "State.h"
 #include "TPMSSensor.h"
 #include "index_html.h"
+#include "PairController.h"
 #include "esp_log.h"
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 static const char *TAG = "WebServer";
 
@@ -206,12 +208,11 @@ esp_err_t WebServer::handleGetConfig(httpd_req_t *req) {
  * @param req HTTP request (JSON body)
  * @return ESP_OK on success
  * @details Parses JSON (simple string search, not robust) and updates:
- *          - front_address: Front sensor MAC address
- *          - rear_address: Rear sensor MAC address
- *          - front_ideal_psi: Target pressure for front tire
- *          - rear_ideal_psi: Target pressure for rear tire
+ *          - mode: 0 (Motorcycle) or 1 (Car)
+ *          - addresses: array of up to 4 MAC address strings
+ *          - ideal_psi: array of float PSI values corresponding to addresses
  *          - pressure_unit: "PSI" or "BAR"
- *          Saves all changes to NVS via ConfigManager
+ *          Saves all changes to NVS via ConfigManager (keys: sensor_address_x, sensor_ideal_psi_x)
  */
 esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	char content[512];
@@ -227,50 +228,84 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 	// Parse JSON manually (simple parsing)
 	Application &app = Application::instance();
 	ConfigManager &config = app.getConfig();
-
-	// Extract values (simple string search, not robust JSON parsing)
+	// Extract values (simple JSON parsing without a full JSON parser)
 	char *ptr;
 
-	// Front address
-	ptr = strstr(content, "\"front_address\":\"");
+	// Mode: supports either integer or string name
+	int appMode = MODE_BIKE;
+	ptr = strstr(content, "\"mode\":");
 	if (ptr) {
-		ptr += 17;
-		char *end = strchr(ptr, '"');
-		if (end) {
-			std::string addr(ptr, end - ptr);
-			config.setString("front_address", addr);
-			ESP_LOGI(TAG, "Set front_address: %s", addr.c_str());
+		ptr += 7;
+		// Skip whitespace
+		while (*ptr == ' ' || *ptr == '\t') ptr++;
+		if (*ptr == '"') {
+			ptr++;
+			char *end = strchr(ptr, '"');
+			if (end) {
+				std::string m(ptr, end - ptr);
+				if (m == "car" || m == "MODE_CAR" || m == "1") {
+					appMode = MODE_CAR;
+				} else {
+					appMode = MODE_BIKE;
+				}
+			}
+		} else {
+			// numeric
+			appMode = atoi(ptr);
+		}
+	}
+	// Persist app mode
+	config.setInt("app_mode", appMode);
+	State::getInstance().setMode(appMode);
+	ESP_LOGI(TAG, "Set app_mode: %d", appMode);
+
+	// Parse sensor addresses: expect JSON array: "addresses":["aa:bb","cc:dd",...]
+	std::vector<std::string> addresses;
+	ptr = strstr(content, "\"addresses\":");
+	if (ptr) {
+		ptr = strchr(ptr, '[');
+		if (ptr) {
+			ptr++;
+			while (*ptr && *ptr != ']') {
+				// Find the next quote
+				char *start = strchr(ptr, '"');
+				if (!start) break;
+				start++;
+				char *end = strchr(start, '"');
+				if (!end) break;
+				addresses.emplace_back(start, end - start);
+				ptr = end + 1;
+				// Move past comma
+				char *comma = strchr(ptr, ',');
+				if (!comma) break;
+				ptr = comma + 1;
+			}
 		}
 	}
 
-	// Rear address
-	ptr = strstr(content, "\"rear_address\":\"");
+	// Parse ideal pressures similarly: "ideal_psi":[36.0,42.0,...]
+	std::vector<float> idealPsi;
+	ptr = strstr(content, "\"ideal_psi\":");
 	if (ptr) {
-		ptr += 16;
-		char *end = strchr(ptr, '"');
-		if (end) {
-			std::string addr(ptr, end - ptr);
-			config.setString("rear_address", addr);
-			ESP_LOGI(TAG, "Set rear_address: %s", addr.c_str());
+		ptr = strchr(ptr, '[');
+		if (ptr) {
+			ptr++;
+			while (*ptr && *ptr != ']') {
+				while (*ptr == ' ' || *ptr == '\t' || *ptr == ',') ptr++;
+				char *end = ptr;
+				// read number
+				while (*end && *end != ',' && *end != ']') end++;
+				char temp[32] = {0};
+				size_t len = end - ptr;
+				if (len >= sizeof(temp)) len = sizeof(temp) - 1;
+				strncpy(temp, ptr, len);
+				idealPsi.push_back(static_cast<float>(atof(temp)));
+				ptr = end;
+				if (*ptr == ',') ptr++;
+			}
 		}
 	}
 
-	// Front PSI
-	ptr = strstr(content, "\"front_ideal_psi\":");
-	if (ptr) {
-		float psi = atof(ptr + 18);
-		config.setFloat("front_ideal_psi", psi);
-		ESP_LOGI(TAG, "Set front_ideal_psi: %.1f", psi);
-	}
-
-	// Rear PSI
-	ptr = strstr(content, "\"rear_ideal_psi\":");
-	if (ptr) {
-		float psi = atof(ptr + 17);
-		config.setFloat("rear_ideal_psi", psi);
-		ESP_LOGI(TAG, "Set rear_ideal_psi: %.1f", psi);
-	}
-	
 	// Pressure unit
 	ptr = strstr(content, "\"pressure_unit\":\"");
 	if (ptr) {
@@ -286,6 +321,42 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
 		}
 	}
 
+	// Now persist addresses and ideal pressures in the keys that Application.cpp expects
+	if (appMode == MODE_BIKE) {
+		// Bike: keys sensor_address_0 and sensor_address_1
+		for (int i = 0; i < 2; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i);
+			std::string value = (i < (int)addresses.size()) ? addresses[i] : std::string("");
+			config.setString(key, value);
+			State::getInstance().setAddress(i, value);
+			ESP_LOGI(TAG, "Set %s: %s", key.c_str(), value.c_str());
+		}
+		// Ideal pressures for two sensors
+		for (int i = 0; i < 2; ++i) {
+			std::string key = "sensor_ideal_psi_" + std::to_string(i);
+			float psi = (i < (int)idealPsi.size()) ? idealPsi[i] : State::getInstance().getIdealPSI(i);
+			config.setFloat(key, psi);
+			State::getInstance().setIdealPSI(i, psi);
+			ESP_LOGI(TAG, "Set %s: %.1f", key.c_str(), psi);
+		}
+	} else {
+		// Car: Application.cpp loads keys sensor_address_1..4 and sensor_ideal_psi_1..4
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i + 1);
+			std::string value = (i < (int)addresses.size()) ? addresses[i] : std::string("");
+			config.setString(key, value);
+			State::getInstance().setAddress(i, value);
+			ESP_LOGI(TAG, "Set %s: %s", key.c_str(), value.c_str());
+		}
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_ideal_psi_" + std::to_string(i + 1);
+			float psi = (i < (int)idealPsi.size()) ? idealPsi[i] : State::getInstance().getIdealPSI(i);
+			config.setFloat(key, psi);
+			State::getInstance().setIdealPSI(i, psi);
+			ESP_LOGI(TAG, "Set %s: %.1f", key.c_str(), psi);
+		}
+	}
+
 	const char *response = "{\"status\":\"ok\"}";
 	return sendJSON(req, response);
 }
@@ -297,8 +368,11 @@ esp_err_t WebServer::handleSetConfig(httpd_req_t *req) {
  * @details TODO: Not yet implemented - placeholder for future pairing API
  */
 esp_err_t WebServer::handlePairSensor(httpd_req_t *req) {
-	// TODO: Implement pairing logic
-	const char *response = "{\"status\":\"ok\"}";
+	// Start pairing via PairController
+	ESP_LOGI(TAG, "Pairing requested via API");
+	PairController &pc = PairController::instance();
+	pc.init();
+	const char *response = "{\"status\":\"pairing_started\"}";
 	return sendJSON(req, response);
 }
 
@@ -315,13 +389,20 @@ esp_err_t WebServer::handleClearConfig(httpd_req_t *req) {
 	Application &app = Application::instance();
 	ConfigManager &config = app.getConfig();
 
-	// Clear sensor addresses
-	config.setString("front_address", "");
-	config.setString("rear_address", "");
+	// Clear sensor addresses (bike and car keys) and legacy front/rear keys
+	for (int i = 0; i < 4; ++i) {
+		std::string key0 = "sensor_address_" + std::to_string(i);
+		config.setString(key0, "");
+		std::string key1 = "sensor_address_" + std::to_string(i + 1);
+		config.setString(key1, "");
+	}
+	// Legacy keys removed; we persist to sensor_address_* only
 
-	// Reset to default PSI values
-	config.setFloat("front_ideal_psi", 36.0f);
-	config.setFloat("rear_ideal_psi", 42.0f);
+	// Reset to default PSI values for all 4 positions
+	config.setFloat("sensor_ideal_psi_0", 36.0f);
+	config.setFloat("sensor_ideal_psi_1", 42.0f);
+	config.setFloat("sensor_ideal_psi_2", 36.0f);
+	config.setFloat("sensor_ideal_psi_3", 42.0f);
 
 	ESP_LOGI(TAG, "Configuration cleared - addresses reset, PSI set to defaults");
 
@@ -388,17 +469,29 @@ std::string WebServer::getSensorsJSON() {
  * @brief Build JSON string with current configuration
  * @return JSON string
  * @details Reads State singleton and formats as JSON with:
- *          front_address, rear_address, front_ideal_psi, rear_ideal_psi
+ *          mode, addresses[] (4), ideal_psi[] (4), pressure_unit
  */
 std::string WebServer::getConfigJSON() {
 	State &state = State::getInstance();
+	// Return JSON with app mode and addresses/ideal_psi arrays
+	char json[1024];
+	int mode = state.getMode();
+	// Build addresses JSON array with up to 4 sensor addresses (empty strings allowed)
+	const std::string &a0 = state.getAddress(0);
+	const std::string &a1 = state.getAddress(1);
+	const std::string &a2 = state.getAddress(2);
+	const std::string &a3 = state.getAddress(3);
+	float p0 = state.getIdealPSI(0);
+	float p1 = state.getIdealPSI(1);
+	float p2 = state.getIdealPSI(2);
+	float p3 = state.getIdealPSI(3);
 
-	char json[512];
 	snprintf(json, sizeof(json),
-			 "{\"front_address\":\"%s\",\"rear_address\":\"%s\","
-			 "\"front_ideal_psi\":%.1f,\"rear_ideal_psi\":%.1f}",
-			 state.getFrontAddress().c_str(), state.getRearAddress().c_str(),
-			 state.getFrontIdealPSI(), state.getRearIdealPSI());
+			 "{\"mode\":%d,\"addresses\":[\"%s\",\"%s\",\"%s\",\"%s\"],"
+			 "\"ideal_psi\":[%.1f,%.1f,%.1f,%.1f],\"pressure_unit\":\"%s\"}",
+			 mode,
+			 a0.c_str(), a1.c_str(), a2.c_str(), a3.c_str(),
+			 p0, p1, p2, p3, state.getPressureUnit().c_str());
 
 	return std::string(json);
 }

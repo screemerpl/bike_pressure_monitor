@@ -104,6 +104,8 @@ public:
 private:
 	UIController() = default;
 	~UIController() = default;
+	bool m_lvgl_task_started = false;
+	bool m_lvgl_timer_started = false;
 
 	// Disable copy/move
 	UIController(const UIController &) = delete;

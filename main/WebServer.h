@@ -81,7 +81,7 @@ private:
 	 * @brief Handle GET /api/config - get current configuration
 	 * @param req HTTP request
 	 * @return ESP_OK on success
-	 * @details Returns JSON with front/rear addresses, ideal PSI values, pressure unit
+	 * @details Returns JSON with 'mode', addresses array with up to 4 addresses, ideal_psi array and pressure unit
 	 */
 	static esp_err_t handleGetConfig(httpd_req_t *req);
 	
@@ -89,8 +89,9 @@ private:
 	 * @brief Handle POST /api/config - update configuration
 	 * @param req HTTP request (JSON body)
 	 * @return ESP_OK on success
-	 * @details Parses JSON and updates front_address, rear_address, front_ideal_psi,
-	 *          rear_ideal_psi, pressure_unit in ConfigManager
+	 * @details Parses JSON with fields: 'mode' (0/1 or "bike"/"car"), 'addresses' array,
+	 *          'ideal_psi' array and 'pressure_unit'. Writes NVS keys that Application.cpp reads
+	 *          (sensor_address_x and sensor_ideal_psi_x) depending on mode.
 	 */
 	static esp_err_t handleSetConfig(httpd_req_t *req);
 	

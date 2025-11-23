@@ -28,31 +28,11 @@ static const char* TAG_BLE_LOG = "BLELogger";
  *          This enables capturing unknown TPMS protocol variants for analysis.
  */
 static void logBLEDeviceDetails(const NimBLEAdvertisedDevice *advertisedDevice) {
-	// Check if device name contains "TPMS" OR has service UUID 0xA828 (Type 2)
-	bool isTPMS = false;
-	bool isType2Candidate = false;
-	
-	if (advertisedDevice->haveName()) {
-		std::string deviceName = advertisedDevice->getName();
-		if (deviceName.find("TPMS") != std::string::npos) {
-			isTPMS = true;
-		}
-	}
-	
-	if (advertisedDevice->haveServiceUUID()) {
-		NimBLEUUID svcUUID = advertisedDevice->getServiceUUID();
-		if (svcUUID.equals(NimBLEUUID("0xA828"))) {
-			isType2Candidate = true;
-		}
-	}
-	
-	// Skip if neither TPMS nor Type 2 candidate
-	if (!isTPMS && !isType2Candidate) {
-		return;
-	}
+
+
 	
 	std::string deviceName = advertisedDevice->haveName() ? advertisedDevice->getName() : "NoName";
-	std::string deviceType = isTPMS ? "TPMS" : "Type2_Candidate";
+	
 	
 	// Device matches criteria - log all details
 	std::string address = advertisedDevice->getAddress().toString();
@@ -66,7 +46,7 @@ static void logBLEDeviceDetails(const NimBLEAdvertisedDevice *advertisedDevice) 
 	}
 	
 	// Log MAC and signal strength
-	ESP_LOGI(TAG_BLE_LOG, "========== %s Device ==========", deviceType.c_str());
+	ESP_LOGI(TAG_BLE_LOG, "========== Device ==========");
 	ESP_LOGI(TAG_BLE_LOG, "MAC: %s | RSSI: %d dBm | Name: %s | Service: %s", 
 		   address.c_str(), rssi, deviceName.c_str(), svcUUIDStr.c_str());
 	

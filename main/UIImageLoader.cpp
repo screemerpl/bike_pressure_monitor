@@ -24,8 +24,7 @@ void ui_load_splash_images_wrapper(void) {
              free_heap, mon.total_size, mon.free_size, 
              mon.total_size - mon.free_size, mon.used_pct);
     
-    // Load splash logo
-    ui_img_1818877690_load();
+
     
     lv_mem_monitor(&mon);
     free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
@@ -80,12 +79,7 @@ void ui_free_splash_images_wrapper(void) {
              free_heap, mon.total_size, mon.free_size,
              mon.total_size - mon.free_size, mon.used_pct);
     
-    if (ui_img_1818877690.data != NULL) {
-        ESP_LOGI(TAG, "Freeing logo image at %p (35520 bytes)", ui_img_1818877690.data);
-        lv_free((void*)ui_img_1818877690.data);
-        ui_img_1818877690.data = NULL;
-    }
-    
+
     lv_mem_monitor(&mon);
     free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
     ESP_LOGI(TAG, "After free: ESP32 heap=%zu bytes, LVGL total=%zu free=%zu used=%zu (%u%%) - reclaimed", 

@@ -144,15 +144,20 @@ idf.py build
 
 ### Default Settings (NVS)
 
-Configuration is stored in Non-Volatile Storage and persists across reboots:
+Configuration is stored in Non-Volatile Storage and persists across reboots.
+Current configuration format (mode, addresses array, ideal_psi array):
 
 ```json
 {
-  "front_address": "80:ea:ca:10:05:32",
-  "rear_address": "81:ea:ca:20:04:10",
-  "front_ideal_psi": 36.0,
-  "rear_ideal_psi": 42.0,
-  "brightness_index": 4
+  "mode": 0,                      // 0 = Motorcycle, 1 = Car
+  "addresses": [
+    "80:ea:ca:10:05:32",
+    "81:ea:ca:20:04:10",
+    "", ""                    // car mode would use up to 4 addresses
+  ],
+  "ideal_psi": [36.0, 42.0, 36.0, 42.0],
+  "brightness_index": 4,
+  "pressure_unit": "PSI"
 }
 ```
 

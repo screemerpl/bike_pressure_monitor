@@ -102,8 +102,7 @@ void Application::init() {
 		initBLE();
 	}
 	
-	// Start LVGL tick timer for UI updates
-	startUISystem();
+	// LVGL timer and handler task are started in DisplayManager::init()
 	
 	if (m_wifiConfigMode) {
 		// WiFi config mode: Start AP and web server for OTA/config
@@ -128,23 +127,52 @@ void Application::loadConfiguration() {
 	// Initialize ConfigManager and load JSON from NVS
 	m_config.init();
 	ESP_LOGI(TAG, "Loaded JSON Config: %s", m_config.getJsonString().c_str());
-
+	// Load application mode
+	int appMode = MODE_BIKE;
+	m_config.getInt("app_mode", appMode , MODE_BIKE);
+	state.setMode(appMode);
+	ESP_LOGI(TAG, "Application mode: %d", state.getMode());
 	// Load sensor MAC addresses
-	std::string frontAddr, rearAddr;
-	m_config.getString("front_address", frontAddr, "");
-	m_config.getString("rear_address", rearAddr, "");
-	state.setFrontAddress(frontAddr);
-	state.setRearAddress(rearAddr);
+	std::string addresses[4];
 
-	ESP_LOGI(TAG, "Loaded sensor addresses: Front=%s, Rear=%s",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str());
+	if (state.getMode() == MODE_BIKE) {
+		m_config.getString("sensor_address_0", addresses[SENSOR_BIKE_FRONT], "");
+		m_config.getString("sensor_address_1", addresses[SENSOR_BIKE_REAR], "");
+		state.setAddress(SENSOR_BIKE_FRONT, addresses[SENSOR_BIKE_FRONT]);
+		state.setAddress(SENSOR_BIKE_REAR, addresses[SENSOR_BIKE_REAR]);
+		ESP_LOGI(TAG, "Loaded sensor addresses: Front=%s, Rear=%s",
+			   state.getAddress(SENSOR_BIKE_FRONT).c_str(), state.getAddress(SENSOR_BIKE_REAR).c_str());
+	} else if (state.getMode() == MODE_CAR) {
+		for (int i = 0; i < 4; ++i) {
+			std::string key = "sensor_address_" + std::to_string(i + 1);
+			m_config.getString(key, addresses[i], "");
+			state.setAddress(i, addresses[i]);
+		}
+		ESP_LOGI(TAG, "Loaded sensor addresses: FL=%s, FR=%s, RL=%s, RR=%s",
+			   state.getAddress(SENSOR_CAR_FRONT_LEFT).c_str(), state.getAddress(SENSOR_CAR_FRONT_RIGHT).c_str(),
+			   state.getAddress(SENSOR_CAR_REAR_LEFT).c_str(), state.getAddress(SENSOR_CAR_REAR_RIGHT).c_str());
+	}
 
 	// Load ideal pressure values with defaults
-	float frontPSI, rearPSI;
-	m_config.getFloat("front_ideal_psi", frontPSI, DEFAULT_FRONT_PSI);
-	m_config.getFloat("rear_ideal_psi", rearPSI, DEFAULT_REAR_PSI);
-	state.setFrontIdealPSI(frontPSI);
-	state.setRearIdealPSI(rearPSI);
+	float idealPressures[4] = {DEFAULT_FRONT_PSI, DEFAULT_REAR_PSI, DEFAULT_FRONT_PSI, DEFAULT_REAR_PSI};
+	if (state.getMode() == MODE_BIKE) {
+		m_config.getFloat("sensor_ideal_psi_0", idealPressures[SENSOR_BIKE_FRONT], DEFAULT_FRONT_PSI);
+		m_config.getFloat("sensor_ideal_psi_1", idealPressures[SENSOR_BIKE_REAR], DEFAULT_REAR_PSI);
+		state.setIdealPSI(SENSOR_BIKE_FRONT, idealPressures[SENSOR_BIKE_FRONT]);
+		state.setIdealPSI(SENSOR_BIKE_REAR, idealPressures[SENSOR_BIKE_REAR]);
+		ESP_LOGI(TAG, "Loaded ideal pressures: Front=%.1f PSI, Rear=%.1f PSI",
+			   state.getIdealPSI(SENSOR_BIKE_FRONT), state.getIdealPSI(SENSOR_BIKE_REAR));
+	} else if (state.getMode() == MODE_CAR) {
+		for (int i = 0; i < 4; ++i) {
+				std::string key = "sensor_ideal_psi_" + std::to_string(i + 1);
+				m_config.getFloat(key, idealPressures[i], idealPressures[i]);
+				state.setIdealPSI(i, idealPressures[i]);
+		}
+
+		ESP_LOGI(TAG, "Loaded ideal pressures: FL=%.1f PSI, FR=%.1f PSI, RL=%.1f PSI, RR=%.1f PSI",
+			   state.getIdealPSI(SENSOR_CAR_FRONT_LEFT), state.getIdealPSI(SENSOR_CAR_FRONT_RIGHT),
+			   state.getIdealPSI(SENSOR_CAR_REAR_LEFT), state.getIdealPSI(SENSOR_CAR_REAR_RIGHT));
+	}
 	
 	// Load pressure unit preference (PSI or BAR)
 	std::string unit;
@@ -160,10 +188,23 @@ void Application::loadConfiguration() {
 	}
 
 	// Update pairing status based on whether both addresses are configured
-	state.setIsPaired(!state.getFrontAddress().empty() && !state.getRearAddress().empty());
-
-	ESP_LOGI(TAG, "Sensors: Front=%s, Rear=%s, Paired=%d",
-		   state.getFrontAddress().c_str(), state.getRearAddress().c_str(), state.getIsPaired());
+	if (state.getMode() == MODE_BIKE)
+	{
+		state.setIsPaired(!state.getAddress(SENSOR_BIKE_FRONT).empty() && !state.getAddress(SENSOR_BIKE_REAR).empty());
+	} else if (state.getMode() == MODE_CAR) {
+		bool allPaired = true;
+		for (int i = 0; i < 4; ++i) {
+			if (state.getAddress(i).empty()) {
+				allPaired = false;
+				break;
+			}
+		}
+		state.setIsPaired(allPaired);
+	}
+	
+	ESP_LOGI(TAG, "Pressure unit: %s", state.getPressureUnit().c_str());
+	ESP_LOGI(TAG, "Display brightness index: %d", m_currentBrightnessIndex);
+	ESP_LOGI(TAG, "Sensors paired: %s", state.getIsPaired() ? "YES" : "NO");
 }
 
 /**
@@ -266,8 +307,7 @@ void Application::startUISystem() {
  *          2. Control logic task - handles screen transitions, button input, app state
  */
 void Application::run() {
-	// Start LVGL timer handler task (handles GUI updates at ~30fps)
-	m_uiController->startLVGLTask();
+	// LVGL handler task is started in DisplayManager::init(); do not start it here
 
 	// Create control logic task (handles screen transitions and app state)
 	xTaskCreate(controlLogicTaskWrapper, "control_logic", 2048, this,
@@ -527,8 +567,18 @@ void Application::handleLongPress() {
 	ESP_LOGI(TAG, "Long press detected - clearing sensor addresses and rebooting...");
 	
 	// Clear sensor addresses from configuration
-	m_config.setString("front_address", "");
-	m_config.setString("rear_address", "");
+	// Clear both legacy and new configuration keys for bike/car
+	for (int i = 0; i < 4; ++i) {
+		std::string k0 = "sensor_address_" + std::to_string(i);
+		std::string k1 = "sensor_address_" + std::to_string(i + 1);
+		m_config.setString(k0, "");
+		m_config.setString(k1, "");
+	}
+	// Legacy keys 'front_address'/'rear_address' are deprecated; we only use sensor_address_x
+	m_config.setFloat("sensor_ideal_psi_0", DEFAULT_FRONT_PSI);
+	m_config.setFloat("sensor_ideal_psi_1", DEFAULT_REAR_PSI);
+	m_config.setFloat("sensor_ideal_psi_2", DEFAULT_FRONT_PSI);
+	m_config.setFloat("sensor_ideal_psi_3", DEFAULT_REAR_PSI);
 	
 	// Brief delay for user feedback
 	vTaskDelay(pdMS_TO_TICKS(500));
@@ -655,16 +705,16 @@ void Application::updateLabelsCallback(void *arg) {
 	State &state = State::getInstance();
 	UIController &ui = UIController::instance();
 
-	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
-	TPMSSensor *frontSensor = nullptr;
-	TPMSSensor *rearSensor = nullptr;
+	if (state.getMode() == MODE_BIKE) {
+		TPMSSensor *frontSensor = nullptr;
+		TPMSSensor *rearSensor = nullptr;
 
-	auto frontIt = state.getData().find(state.getFrontAddress());
+	auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
 	if (frontIt != state.getData().end()) {
 		frontSensor = frontIt->second;
 	}
 
-	auto rearIt = state.getData().find(state.getRearAddress());
+	auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
 	if (rearIt != state.getData().end()) {
 		rearSensor = rearIt->second;
 	}
@@ -674,8 +724,11 @@ void Application::updateLabelsCallback(void *arg) {
 	ui.updateAlertBlinkState(currentTime);
 
 	// Update UI with current sensor readings
-	ui.updateSensorUI(frontSensor, rearSensor, state.getFrontIdealPSI(),
-					  state.getRearIdealPSI(), currentTime);
+	ui.updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
+					  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+	}
+	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
+	
 }
 
 /**

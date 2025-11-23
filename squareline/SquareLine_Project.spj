@@ -7,8 +7,8 @@
         "guid": "GUID35963965-716849S6264321",
         "deepid": -856887746,
         "isPage": true,
-        "editor_posx": 900,
-        "editor_posy": -300,
+        "editor_posx": 315,
+        "editor_posy": -600,
         "dont_export": false,
         "locked": false,
         "properties": [
@@ -110,7 +110,29 @@
           },
           {
             "part": "lv.PART.MAIN",
-            "childs": [],
+            "childs": [
+              {
+                "nid": 10000,
+                "strtype": "_style/StyleState",
+                "strval": "DEFAULT",
+                "childs": [
+                  {
+                    "nid": 10520,
+                    "strtype": "_style/Bg_Color",
+                    "strval": "Background",
+                    "integer": 1000615,
+                    "intarray": [
+                      20,
+                      23,
+                      27,
+                      255
+                    ],
+                    "InheritedType": 7
+                  }
+                ],
+                "InheritedType": 1
+              }
+            ],
             "nid": 1040,
             "strtype": "SCREEN/Style_main",
             "strval": "lv.PART.MAIN, Rectangle, Pad, Text",
@@ -265,6 +287,19 @@
                     "strtype": "_style/StyleState",
                     "strval": "DEFAULT",
                     "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
                       {
                         "nid": 10430,
                         "strtype": "_style/Text_Align",
@@ -451,7 +486,8 @@
                 "InheritedType": 11
               }
             ],
-            "saved_objtypeKey": "IMAGE"
+            "saved_objtypeKey": "IMAGE",
+            "tree_closed": true
           },
           {
             "guid": "GUID63415042-643615S303154318",
@@ -579,6 +615,19 @@
                     "strval": "DEFAULT",
                     "childs": [
                       {
+                        "nid": 10310,
+                        "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
+                        "intarray": [
+                          0,
+                          78,
+                          18,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
                         "nid": 10320,
                         "strtype": "_style/Arc_Width",
                         "integer": 10,
@@ -604,10 +653,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          36,
                           255
                         ],
                         "InheritedType": 7
@@ -755,10 +806,12 @@
                   {
                     "nid": 10520,
                     "strtype": "_style/Bg_Color",
+                    "strval": "Background",
+                    "integer": 1000615,
                     "intarray": [
-                      0,
-                      0,
-                      0,
+                      20,
+                      23,
+                      27,
                       255
                     ],
                     "InheritedType": 7
@@ -766,10 +819,12 @@
                   {
                     "nid": 10530,
                     "strtype": "_style/Bg_gradiens_Color",
+                    "strval": "Bright",
+                    "integer": 1000618,
                     "intarray": [
-                      14,
-                      67,
-                      8
+                      20,
+                      217,
+                      0
                     ],
                     "InheritedType": 7
                   },
@@ -777,7 +832,7 @@
                     "nid": 10540,
                     "strtype": "_style/Bg_gradient_params",
                     "intarray": [
-                      100,
+                      140,
                       255
                     ],
                     "InheritedType": 7
@@ -949,7 +1004,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1050,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -1092,6 +1169,19 @@
                     "strtype": "_style/StyleState",
                     "strval": "DEFAULT",
                     "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
                       {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
@@ -1244,6 +1334,19 @@
                     "strtype": "_style/StyleState",
                     "strval": "DEFAULT",
                     "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
                       {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
@@ -1427,10 +1530,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          17,
-                          255,
                           0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -1467,10 +1572,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          74,
-                          255,
-                          64,
+                          20,
+                          217,
+                          0,
                           255
                         ],
                         "InheritedType": 7
@@ -1495,6 +1602,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -1702,9 +1811,11 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          42,
-                          255,
+                          20,
+                          217,
                           0,
                           255
                         ],
@@ -1742,10 +1853,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          64,
-                          255,
-                          79,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -1770,6 +1883,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -2157,10 +2272,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -2185,10 +2302,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -2333,7 +2452,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1050,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -2470,7 +2611,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1050,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -2630,10 +2793,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -2658,10 +2823,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -2806,7 +2973,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1050,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -2943,7 +3132,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1050,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -4317,7 +4528,29 @@
           },
           {
             "part": "lv.PART.MAIN",
-            "childs": [],
+            "childs": [
+              {
+                "nid": 10000,
+                "strtype": "_style/StyleState",
+                "strval": "DEFAULT",
+                "childs": [
+                  {
+                    "nid": 10520,
+                    "strtype": "_style/Bg_Color",
+                    "strval": "Background",
+                    "integer": 1000615,
+                    "intarray": [
+                      20,
+                      23,
+                      27,
+                      255
+                    ],
+                    "InheritedType": 7
+                  }
+                ],
+                "InheritedType": 1
+              }
+            ],
             "nid": 1040,
             "strtype": "SCREEN/Style_main",
             "strval": "lv.PART.MAIN, Rectangle, Pad, Text",
@@ -4473,6 +4706,19 @@
                     "strval": "DEFAULT",
                     "childs": [
                       {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
                         "strval": "montserrat_32",
@@ -4624,6 +4870,19 @@
                     "strtype": "_style/StyleState",
                     "strval": "DEFAULT",
                     "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
                       {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
@@ -4777,6 +5036,19 @@
                     "strval": "DEFAULT",
                     "childs": [
                       {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
                         "strval": "montserrat_32",
@@ -4929,6 +5201,19 @@
                     "strval": "DEFAULT",
                     "childs": [
                       {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
                         "nid": 10450,
                         "strtype": "_style/Text_Font",
                         "strval": "montserrat_32",
@@ -5074,7 +5359,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -5533,7 +5840,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -5671,7 +6000,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -5809,7 +6160,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -5947,7 +6320,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -6109,10 +6504,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -6137,10 +6534,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -6310,10 +6709,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -6338,10 +6739,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -6511,10 +6914,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -6539,10 +6944,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -6712,10 +7119,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          24,
-                          58,
-                          27,
+                          0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -6740,10 +7149,12 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          19,
                           255
                         ],
                         "InheritedType": 7
@@ -7085,10 +7496,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          17,
-                          255,
                           0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -7125,10 +7538,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          74,
-                          255,
-                          64,
+                          20,
+                          217,
+                          0,
                           255
                         ],
                         "InheritedType": 7
@@ -7153,6 +7568,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -7359,10 +7776,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          17,
-                          255,
                           0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -7399,10 +7818,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          74,
-                          255,
-                          64,
+                          20,
+                          217,
+                          0,
                           255
                         ],
                         "InheritedType": 7
@@ -7427,6 +7848,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -7633,10 +8056,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          17,
-                          255,
                           0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -7673,10 +8098,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          74,
-                          255,
-                          64,
+                          20,
+                          217,
+                          0,
                           255
                         ],
                         "InheritedType": 7
@@ -7701,6 +8128,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -7907,10 +8336,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
                         "intarray": [
-                          17,
-                          255,
                           0,
+                          78,
+                          18,
                           255
                         ],
                         "InheritedType": 7
@@ -7947,10 +8378,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
-                          74,
-                          255,
-                          64,
+                          20,
+                          217,
+                          0,
                           255
                         ],
                         "InheritedType": 7
@@ -7975,6 +8408,8 @@
                       {
                         "nid": 10520,
                         "strtype": "_style/Bg_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
                         "intarray": [
                           255,
                           255,
@@ -8776,7 +9211,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -8914,7 +9371,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -9052,7 +9531,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -9190,7 +9691,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -9834,8 +10357,8 @@
           }
         ],
         "isPage": true,
-        "editor_posx": 900,
-        "editor_posy": -300,
+        "editor_posx": 600,
+        "editor_posy": -600,
         "dont_export": false,
         "locked": false,
         "properties": [
@@ -10078,7 +10601,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -10215,7 +10760,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -10499,6 +11066,19 @@
                     "strval": "DEFAULT",
                     "childs": [
                       {
+                        "nid": 10310,
+                        "strtype": "_style/Arc_Color",
+                        "strval": "Standard",
+                        "integer": 1000617,
+                        "intarray": [
+                          0,
+                          78,
+                          18,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
                         "nid": 10320,
                         "strtype": "_style/Arc_Width",
                         "integer": 10,
@@ -10524,10 +11104,12 @@
                       {
                         "nid": 10310,
                         "strtype": "_style/Arc_Color",
+                        "strval": "Bright",
+                        "integer": 1000618,
                         "intarray": [
+                          20,
+                          217,
                           0,
-                          255,
-                          36,
                           255
                         ],
                         "InheritedType": 7
@@ -10689,7 +11271,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -10831,7 +11435,29 @@
               },
               {
                 "part": "lv.PART.MAIN",
-                "childs": [],
+                "childs": [
+                  {
+                    "nid": 10000,
+                    "strtype": "_style/StyleState",
+                    "strval": "DEFAULT",
+                    "childs": [
+                      {
+                        "nid": 10410,
+                        "strtype": "_style/Text_Color",
+                        "strval": "Text",
+                        "integer": 1000616,
+                        "intarray": [
+                          255,
+                          255,
+                          255,
+                          255
+                        ],
+                        "InheritedType": 7
+                      }
+                    ],
+                    "InheritedType": 1
+                  }
+                ],
                 "nid": 1040,
                 "strtype": "LABEL/Style_main",
                 "strval": "lv.PART.MAIN, Text, Rectangle, Pad, Transform",
@@ -10842,7 +11468,7 @@
           }
         ],
         "isPage": true,
-        "editor_posx": 1200,
+        "editor_posx": 900,
         "editor_posy": -300,
         "dont_export": false,
         "locked": false,
@@ -10937,7 +11563,29 @@
           },
           {
             "part": "lv.PART.MAIN",
-            "childs": [],
+            "childs": [
+              {
+                "nid": 10000,
+                "strtype": "_style/StyleState",
+                "strval": "DEFAULT",
+                "childs": [
+                  {
+                    "nid": 10520,
+                    "strtype": "_style/Bg_Color",
+                    "strval": "Background",
+                    "integer": 1000615,
+                    "intarray": [
+                      20,
+                      23,
+                      27,
+                      255
+                    ],
+                    "InheritedType": 7
+                  }
+                ],
+                "InheritedType": 1
+              }
+            ],
             "nid": 1040,
             "strtype": "SCREEN/Style_main",
             "strval": "lv.PART.MAIN, Rectangle, Pad, Text",
@@ -10977,7 +11625,7 @@
     "rotation": 0,
     "offset_x": 0,
     "offset_y": 0,
-    "shape": "CIRCLE",
+    "shape": "RECTANGLE",
     "multilang": "DISABLE",
     "description": "",
     "board": "Visual Studio for development on Windows PC",
@@ -10994,17 +11642,17 @@
     "theme_color1": 5,
     "theme_color2": 0,
     "custom_variable_prefix": "uic",
-    "backup_cnt": 50,
+    "backup_cnt": 61,
     "autosave_cnt": 0,
     "group_color_cnt": 0,
     "lvgl_version": "9.2.2",
     "callfuncsexport": "C_FILE",
-    "imageexport": "BINARY_COMPRESSED",
+    "imageexport": "BINARY_RAW",
     "lvgl_include_path": "",
     "naming": "Name",
     "naming_force_lowercase": false,
     "naming_add_subcomponent": false,
-    "nidcnt": 1000615,
+    "nidcnt": 1000619,
     "BitDepth": 16,
     "Name": "SquareLine_Project"
   }
