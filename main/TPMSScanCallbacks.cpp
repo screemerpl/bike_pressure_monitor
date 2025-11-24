@@ -103,7 +103,7 @@ void TPMSScanCallbacks::onDiscovered(
 
     // LOG ALL BLE DEVICES FOR REVERSE ENGINEERING
     // This helps identify new TPMS protocol variants
-    logBLEDeviceDetails(advertisedDevice);
+    // TEMPORARY DISABLE: logBLEDeviceDetails(advertisedDevice);
 
     // Extract manufacturer-specific data from BLE advertisement (raw pointer)
     std::string manufacturerData = advertisedDevice->getManufacturerData();

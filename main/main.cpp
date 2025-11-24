@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
  * @brief Application entry point
- * @details ESP-IDF entry point for Bike TPMS Monitor application.
+ * @details ESP-IDF entry point for Universal Pressure Monitor application.
  *          Initializes Application singleton and starts all tasks.
  * 
  * SPDX-FileCopyrightText: 2010-2022 Espressif Systems (Shanghai) CO LTD

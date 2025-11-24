@@ -24,7 +24,7 @@ add_definitions(-DGIT_VERSION="${GIT_VERSION}")
 message(STATUS "Build version: ${GIT_VERSION}")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(bike_pressure_monitor)
+project(universal_pressure_monitor)
 
 # Copy SPIFFS files from SquareLine UI/drive to spiffs_data BEFORE creating SPIFFS image
 execute_process(

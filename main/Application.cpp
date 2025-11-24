@@ -17,6 +17,8 @@
 #include <NimBLEDevice.h>      // BLE scanning
 #include <dirent.h>            // Directory operations
 #include "UI/ui.h"
+#include "UIBikeController.h"
+#include "UICarController.h"
 
 /// Global button state for ISR and task interaction
 static Application::ButtonState g_buttonState = {};
@@ -40,7 +42,9 @@ static constexpr int DEFAULT_BRIGHTNESS_INDEX = 4;           ///< Default bright
 static constexpr uint8_t MAX_BRIGHTNESS_INDEX = 4;           ///< Maximum brightness index
 
 /// Log tag for Application module
-[[maybe_unused]] static const char* TAG = "Application";
+static const char* TAG = "Application";
+
+
 
 /**
  * @brief GPIO interrupt handler for button press detection
@@ -283,39 +287,25 @@ void Application::initializeDisplay() {
 
 	// Apply saved UI theme from configuration (call after UI is initialized)
 	int themeIdx = State::getInstance().getUITheme();
-	ui_theme_set(themeIdx);
-	switch (themeIdx) {
-		case UI_THEME_DEFAULT:
-			ESP_LOGI(TAG, "Applied UI theme: DEFAULT");
-			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
-			break;
-		case UI_THEME_TOYO:
-			ESP_LOGI(TAG, "Applied UI theme: TOYO");
-			lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
-			break;
-		case UI_THEME_HYBRID:
-			ESP_LOGI(TAG, "Applied UI theme: HYBRID");
-			lv_image_set_src(ui_LogoImg, &ui_img_toyotablue_png);
-			break;
-		default:
-			ESP_LOGI(TAG, "Applied UI theme: UNKNOWN (%d)", themeIdx);
-			lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
-			break;
-	}
+
+	// DisplayManager schedules the theme change on the LVGL task after ui_init()
 	ESP_LOGI(TAG, "Applied UI theme: %d", themeIdx);
 
-	// Set version or WiFi mode label before any screen transitions
+	// Set version or WiFi mode label before any screen transitions but from LVGL task
 	if (m_wifiConfigMode) {
-		m_uiController->setWiFiModeLabel();
+		lv_async_call([](void *arg){ (void)arg; UIController::instance().setWiFiModeLabel(); }, nullptr);
 	} else {
-		m_uiController->setVersionLabel();
+		lv_async_call(Application::setVersionLabelCallback, nullptr);
 	}
 
 	// Apply saved brightness setting from configuration
 	m_display->setBacklightBrightness(BRIGHTNESS_LEVELS[m_currentBrightnessIndex]);
 	ESP_LOGI(TAG, "Display brightness: %d%% (index %d)",
 		   BRIGHTNESS_LEVELS[m_currentBrightnessIndex], m_currentBrightnessIndex);
+// Forward declaration removed here (declared at top)
 }
+
+// Forward declaration for LVGL theme callback used with lv_async_call
 
 /**
  * @brief Record application start timestamp
@@ -324,6 +314,10 @@ void Application::initializeDisplay() {
 void Application::recordStartTime() {
 	m_startTime = esp_timer_get_time() / 1000; // Convert microseconds to milliseconds
 }
+
+/*
+ * (Temporarily removed earlier implementation - implementation kept near LVGL callbacks)
+ */
 
 /**
  * @brief Start LVGL tick timer for UI updates
@@ -675,6 +669,38 @@ void Application::updateUIIfPaired() {
 	}
 }
 
+/**
+ * @brief Async callback to set UI theme and logo from LVGL task
+ * @param arg int* to theme index allocated by caller (freed here)
+ */
+static void applyThemeAsyncCallback(void *arg) {
+	int theme = *((int*)arg);
+	free(arg);
+	ui_theme_set(theme);
+	switch (theme) {
+		case UI_THEME_DEFAULT:
+			ESP_LOGI(TAG, "Applied UI theme: DEFAULT");
+			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			else ESP_LOGW(TAG, "ui_LogoImg is NULL when applying theme DEFAULT");
+			break;
+		case UI_THEME_TOYO:
+			ESP_LOGI(TAG, "Applied UI theme: TOYO");
+			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+			else ESP_LOGW(TAG, "ui_LogoImg is NULL when applying theme TOYO");
+			break;
+		case UI_THEME_HYBRID:
+			ESP_LOGI(TAG, "Applied UI theme: HYBRID");
+			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_toyotablue_png);
+			else ESP_LOGW(TAG, "ui_LogoImg is NULL when applying theme HYBRID");
+			break;
+		default:
+			ESP_LOGI(TAG, "Applied UI theme: UNKNOWN (%d)", theme);
+			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+			else ESP_LOGW(TAG, "ui_LogoImg is NULL when applying theme UNKNOWN");
+			break;
+	}
+}
+
 // ============================================================================
 // LVGL Async Callbacks
 // ============================================================================
@@ -723,41 +749,68 @@ void Application::showPairScreenCallback(void *arg) {
  */
 void Application::initializeLabelsCallback(void *arg) {
 	(void)arg;
-	UIController::instance().initializeLabels();
+	State &state = State::getInstance();
+	if (state.getMode() == MODE_BIKE) {
+		UIBikeController::instance().initializeLabels();
+	} else {
+		UICarController::instance().initializeLabels();
+	}
 }
 
 /**
  * @brief Callback to update sensor data labels on main screen
  * @param arg Unused parameter (required by lv_async_call signature)
  * @details Retrieves sensor data from State, updates alert blink state,
- *          and calls UIController to refresh all sensor displays
+ *          and calls UIBikeController to refresh all main-screen sensor displays
  */
 void Application::updateLabelsCallback(void *arg) {
 	(void)arg;
 	State &state = State::getInstance();
-	UIController &ui = UIController::instance();
 
 	if (state.getMode() == MODE_BIKE) {
 		TPMSSensor *frontSensor = nullptr;
 		TPMSSensor *rearSensor = nullptr;
 
-	auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
-	if (frontIt != state.getData().end()) {
-		frontSensor = frontIt->second;
-	}
+		auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
+		if (frontIt != state.getData().end()) {
+			frontSensor = frontIt->second;
+		}
 
-	auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
-	if (rearIt != state.getData().end()) {
-		rearSensor = rearIt->second;
-	}
+		auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
+		if (rearIt != state.getData().end()) {
+			rearSensor = rearIt->second;
+		}
 
-	// Update alert blink state for warning indicators
-	uint32_t currentTime = esp_timer_get_time() / 1000;
-	ui.updateAlertBlinkState(currentTime);
+		// Update alert blink state for warning indicators
+		uint32_t currentTime = esp_timer_get_time() / 1000;
+		UIBikeController::instance().updateAlertBlinkState(currentTime);
 
-	// Update UI with current sensor readings
-	ui.updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
-					  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+		// Update UI with current sensor readings
+		UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
+												  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+	} else if (state.getMode() == MODE_CAR) {
+		// Map sensors to UI positions in order: FrontLeft (C1), RearLeft (C2), FrontRight (C3), RearRight (C4)
+		TPMSSensor *s_fl = nullptr;
+		TPMSSensor *s_fr = nullptr;
+		TPMSSensor *s_rl = nullptr;
+		TPMSSensor *s_rr = nullptr;
+
+		auto it_fl = state.getData().find(state.getAddress(SENSOR_CAR_FRONT_LEFT));
+		if (it_fl != state.getData().end()) s_fl = it_fl->second;
+		auto it_fr = state.getData().find(state.getAddress(SENSOR_CAR_FRONT_RIGHT));
+		if (it_fr != state.getData().end()) s_fr = it_fr->second;
+		auto it_rl = state.getData().find(state.getAddress(SENSOR_CAR_REAR_LEFT));
+		if (it_rl != state.getData().end()) s_rl = it_rl->second;
+		auto it_rr = state.getData().find(state.getAddress(SENSOR_CAR_REAR_RIGHT));
+		if (it_rr != state.getData().end()) s_rr = it_rr->second;
+
+		uint32_t currentTime = esp_timer_get_time() / 1000;
+		UICarController::instance().updateAlertBlinkState(currentTime);
+		// Pass sensors ordered as C1..C4 -> FrontLeft, RearLeft, FrontRight, RearRight
+		UICarController::instance().updateSensorUI(s_fl, s_rl, s_fr, s_rr,
+			state.getIdealPSI(SENSOR_CAR_FRONT_LEFT), state.getIdealPSI(SENSOR_CAR_REAR_LEFT),
+			state.getIdealPSI(SENSOR_CAR_FRONT_RIGHT), state.getIdealPSI(SENSOR_CAR_REAR_RIGHT),
+			currentTime);
 	}
 	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
 	

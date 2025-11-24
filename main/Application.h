@@ -12,7 +12,7 @@
 /**
  * @class Application
  * @brief Main application controller - singleton orchestrating all subsystems
- * @details Manages the complete lifecycle of the bike pressure monitor application:
+ * @details Manages the complete lifecycle of the Universal Pressure Monitor application:
  *          - Configuration loading/saving
  *          - Display initialization and UI control
  *          - BLE scanning for TPMS sensors
@@ -127,7 +127,7 @@ private:
 	// Member variables
 	ConfigManager m_config;                 ///< Configuration manager (NVS persistence)
 	DisplayManager *m_display = nullptr;    ///< Display manager (LCD/LVGL)
-	UIController *m_uiController = nullptr; ///< UI controller (screen/label updates)
+	UIController *m_uiController = nullptr; ///< UI controller (LVGL tick/task lifecycle and screen transitions)
 	PairController *m_pairController = nullptr; ///< Sensor pairing state machine
 	TPMSScanCallbacks m_scanCallbacks;      ///< BLE scan callbacks for TPMS detection
 	uint32_t m_startTime = 0;               ///< Application start timestamp (ms)

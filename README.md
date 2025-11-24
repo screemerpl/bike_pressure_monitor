@@ -1,6 +1,6 @@
-# Bike Pressure Monitor
+# Universal Pressure Monitor
 
-A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32-C3 with an LCD display powered by LVGL.
+A wireless tire pressure monitoring system (TPMS) for motorcycles and cars built on ESP32-C3 with an LCD display powered by LVGL.
 
 ## Features
 
@@ -50,7 +50,9 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 ├── main/
 │   ├── main.cpp                 - Entry point (app_main)
 │   ├── Application.cpp/h        - Main application logic and control flow
-│   ├── UIController.cpp/h       - LVGL UI management
+│   ├── UIController.cpp/h       - LVGL timing and screen transition management
+│   ├── UIBikeController.cpp/h   - Main-screen UI (motorcycle mode, 2 sensors)
+│   ├── UICarController.cpp/h    - Main-screen UI (car mode, 4 sensors)
 │   ├── DisplayManager.cpp/h     - LCD initialization (Lovyan GFX)
 │   ├── State.cpp/h              - Global state management (singleton)
 │   ├── ConfigManager.cpp/h      - NVS configuration handling
@@ -83,7 +85,8 @@ The application follows a clean separation of concerns with a singleton-based ar
 ### Core Components
 
 - **Application**: Singleton managing initialization, BLE setup, button logic, screen transitions, and mode switching (normal/pairing/config)
-- **UIController**: Handles all LVGL UI updates and rendering via async callbacks
+- **UIController**: Responsible for LVGL tick/timer lifecycle and managing screen transitions (splash/main/pair)
+- **UIBikeController**: Responsible for main screen LVGL updates for motorcycle mode (pressure, temperature, battery, alerts)
 - **State**: Singleton storing global sensor data (pressure, temperature, battery, signal strength)
 - **ConfigManager**: Persistent storage interface for NVS (addresses, pressures, brightness)
 - **PairController**: State machine for guided sensor pairing process
@@ -92,12 +95,40 @@ The application follows a clean separation of concerns with a singleton-based ar
 - **DisplayManager**: Initializes and configures the LCD display
 - **TPMSScanCallbacks**: BLE advertisement parsing and sensor discovery
 
+### UI Controllers (overview)
+
+- **UIController (singleton)**: LVGL tick/timer lifecycle and top-level screen transition control (splash, main, pair).
+- **UIBikeController (singleton)**: Handles main-screen UI updates for motorcycle mode — the widgets that display pressure, temperature, battery, icons and blinking states.
+- **UICarController (singleton)**: Handles car-mode main-screen (4 sensors) UI updates — pressure, temperature, battery, icons and blinking states for 4 sensors.
+
+Example usage (call from application control loop via LVGL async calls):
+```cpp
+// Initialize main-screen labels after UI is created:
+// For motorcycle mode:
+lv_async_call([](void *arg){ (void)arg; UIBikeController::instance().initializeLabels(); }, nullptr);
+// For car:
+lv_async_call([](void *arg){ (void)arg; UICarController::instance().initializeLabels(); }, nullptr);
+
+// Periodic update of sensor UI (on sorted LVGL thread):
+lv_async_call([](void *arg){ (void)arg; 
+  uint32_t currentTime = esp_timer_get_time() / 1000;
+  // Motorcycle example
+  UIBikeController::instance().updateAlertBlinkState(currentTime);
+  UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, frontIdeal, rearIdeal, currentTime);
+  // Car example (front-left, front-right, rear-left, rear-right)
+  UICarController::instance().updateAlertBlinkState(currentTime);
+  // Order of parameters: FrontLeft, RearLeft, FrontRight, RearRight (mapped to C1..C4 UI)
+  UICarController::instance().updateSensorUI(s_fl, s_rl, s_fr, s_rr, ideal_fl, ideal_rl, ideal_fr, ideal_rr, currentTime);
+}, nullptr);
+```
+
 ### Data Flow
 
 1. BLE scan callbacks detect TPMS sensors and parse advertisements
 2. Sensor data is stored in the global State singleton
 3. Application triggers UI updates via LVGL async callbacks
-4. UIController reads from State and updates LVGL widgets
+4. UIBikeController reads from State and updates main-screen LVGL widgets (pressure, temp, battery, icons) for motorcycle mode.
+  UIController maintains LVGL tick/task and triggers screen transitions.
 5. Button presses are handled in Application control task
 6. Configuration changes are persisted via ConfigManager
 
@@ -149,7 +180,7 @@ Current configuration format (mode, addresses array, ideal_psi array):
 
 ```json
 {
-  "mode": 0,                      // 0 = Motorcycle, 1 = Car
+  "mode": 0,                      // 0 = Motorcycle mode, 1 = Car mode
   "addresses": [
     "80:ea:ca:10:05:32",
     "81:ea:ca:20:04:10",
@@ -308,12 +339,12 @@ This project is provided as-is for educational and personal use.
 
 ## Repository
 
-**GitHub**: [screemerpl/bike_pressure_monitor](https://github.com/screemerpl/bike_pressure_monitor)  
+**GitHub**: [screemerpl/bike_pressure_monitor](https://github.com/screemerpl/bike_pressure_monitor)  (repository; project name: Universal Pressure Monitor)
 **Branch**: develop
 
 ## Author
 
-Created for motorcycle tire pressure monitoring with ESP32-C3.
+Created for universal tire pressure monitoring (motorcycle & car) with ESP32-C3.
 
 ---
 
