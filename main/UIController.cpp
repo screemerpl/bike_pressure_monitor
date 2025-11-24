@@ -12,6 +12,7 @@
 #include "UI/ui.h"
 #include "UI/ui_themes.h"
 #include "ui_theme_helper.h"
+#include "UIBikeController.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -79,7 +80,11 @@ void UIController::lvglTickCallback(void *arg) {
  */
 void UIController::lvglTimerTask() {
 	for (;;) {
+		static int iter_count = 0;
 		lv_timer_handler();
+		if ((iter_count++ % 250) == 0) { // log approximately every 5 seconds
+			ESP_LOGD("UIController", "lvglTimerTask alive");
+		}
 		vTaskDelay(pdMS_TO_TICKS(20)); // ~50 FPS
 		State &state = State::getInstance();
 		state.cleanupOldSensors();
@@ -100,9 +105,19 @@ void UIController::lvglTimerTaskWrapper(void *pvParameter) {
  * @details Formats "V:X.X.X" text from Application::appVersion constant
  */
 void UIController::setVersionLabel() {
+	if (ui_VersionStr == NULL) {
+		ESP_LOGW("UIController", "setVersionLabel called before ui_VersionStr created");
+		return;
+	}
+	if (m_versionLabelSet) {
+		ESP_LOGD("UIController", "Version label already set; skipping");
+		return;
+	}
 	char versionText[32];
 	snprintf(versionText, sizeof(versionText), "V:%s", Application::appVersion);
+	ESP_LOGD("UIController", "Setting version label to %s", versionText);
 	lv_label_set_text(ui_VersionStr, versionText);
+	m_versionLabelSet = true;
 }
 
 /**
@@ -128,11 +143,6 @@ void UIController::showSplashScreen() {
  *          Images are loaded immediately. Frees splash images first to reclaim memory.
  */
 void UIController::showMainScreen() {
-	clearFrontSensorUI(true);
-	clearRearSensorUI(true);
-	//ui_free_splash_images_wrapper();
-		//ui_load_main_images_wrapper();
-	/* Chroma key removed - no-op for image objects */
 	lv_screen_load_anim(ui_Main, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
@@ -150,23 +160,7 @@ void UIController::showPairScreen() {
  *          sensor displays to "---", resets arcs/bars to 0, and
  *          sets icons to default (black TPMS, BT off, idle alert)
  */
-void UIController::initializeLabels() {
-	State &state = State::getInstance();
-	
-	// Set unit label based on configuration
-	lv_label_set_text(ui_Unit, state.getPressureUnit().c_str());
-	
-	lv_label_set_text(ui_Pressure1, "---");
-	lv_label_set_text(ui_Pressure2, "---");
-	lv_label_set_text(ui_TempText1, "-- °C");
-	lv_label_set_text(ui_TempText2, "-- °C");
-	lv_label_set_text(ui_BatteryText1, "--%");
-	lv_label_set_text(ui_BatteryText2, "--%");
-	lv_arc_set_value(ui_Battery2, 0);
-	lv_arc_set_value(ui_Battery1, 0);
-	lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	/* Chroma key removed - image sources set without colorkey */
-}
+// initializeLabels moved to UIBikeController
 
 /**
  * @brief Update all sensor UI elements
@@ -178,30 +172,7 @@ void UIController::initializeLabels() {
  * @details Updates both front and rear sensor displays, applies blinking
  *          to unsynchronized sensors, and updates alert icons
  */
-void UIController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSensor,
-							   float frontIdealPSI, float rearIdealPSI,
-							   uint32_t currentTime) {	
-	bool alertFront = false;
-	bool alertRear = false;
-
-	if (frontSensor) {
-		updateFrontSensorUI(frontSensor, frontIdealPSI, currentTime);
-
-		alertFront = frontSensor->getAlert();
-	} else {
-		clearFrontSensorUI(true); // true = apply blink
-	}
-
-	if (rearSensor) {
-		updateRearSensorUI(rearSensor, rearIdealPSI, currentTime);
-
-		alertRear = rearSensor->getAlert();
-	} else {
-		clearRearSensorUI(true); // true = apply blink
-	}
-
-	updateAlertIcons(alertFront, alertRear);
-}
+// updateSensorUI moved to UIBikeController
 
 /**
  * @brief Update front sensor UI display
@@ -216,71 +187,7 @@ void UIController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSenso
  *          Temperature bar color: Blue if temp < 10°C, green otherwise
  *          BLE icon: ON if data received within last 200ms
  */
-void UIController::updateFrontSensorUI(TPMSSensor *frontSensor,
-							   float frontIdealPSI,
-							   uint32_t currentTime) {
-	char buf[16];
-	State &state = State::getInstance();
-	
-	// Display pressure in selected unit
-	if (state.getPressureUnit() == "BAR") {
-		snprintf(buf, sizeof(buf), "%.2f", frontSensor->getPressureBar());
-	} else {
-		snprintf(buf, sizeof(buf), "%.1f", frontSensor->getPressurePSI());
-	}
-	lv_label_set_text(ui_Pressure1, buf);
-	
-	// Reset label color to theme text color when sensor is synchronized
-	lv_obj_set_style_text_color(ui_Pressure1,
-								ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-								LV_PART_MAIN );
-	snprintf(buf, sizeof(buf), "%.1f °C", frontSensor->getTemperatureC());
-	lv_label_set_text(ui_TempText1, buf);
-
-	snprintf(buf, sizeof(buf), "%d%%", frontSensor->getBatteryLevel());
-	lv_label_set_text(ui_BatteryText1, buf);
-
-	lv_arc_set_value(ui_Battery1, static_cast<int>(frontSensor->getBatteryLevel()));
-	lv_bar_set_value(ui_BatteryBar1, static_cast<int>(frontSensor->getTemperatureC()),
-					 LV_ANIM_ON);
-
-	// Change bar color to blue if temperature is below 10°C
-	if (frontSensor->getTemperatureC() < 10.0f) {
-		// On cold temperatures use STANDARD and BRIGHT theme colors
-		lv_obj_set_style_bg_color(ui_BatteryBar1,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_STANDARD),
-					  LV_PART_MAIN);
-		lv_obj_set_style_bg_color(ui_BatteryBar1,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_HOT),
-					  LV_PART_INDICATOR);
-	} else {
-		// Default (warmer) temperature: also use STANDARD and BRIGHT themed colors
-		lv_obj_set_style_bg_color(ui_BatteryBar1,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_STANDARD),
-					  LV_PART_MAIN);
-		lv_obj_set_style_bg_color(ui_BatteryBar1,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_BRIGHT),
-					  LV_PART_INDICATOR);
-	}
-
-	// Update pressure indicator icon
-	if (frontSensor->getPressurePSI() < frontIdealPSI * 0.75f) {
-		lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsred_png);
-	} else if (frontSensor->getPressurePSI() < frontIdealPSI * 0.9f) {
-		lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsyellow_png);
-	} else {
-		lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	
-	}
-
-	// Update BLE connection status icon
-	if (frontSensor->getTimestamp() + 200 < currentTime) {
-		lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
-	
-	} else {
-		lv_image_set_src(ui_BTicon1, &ui_img_bton_png);
-	}
-}
+// updateFrontSensorUI moved to UIBikeController
 
 /**
  * @brief Update rear sensor UI display
@@ -290,70 +197,7 @@ void UIController::updateFrontSensorUI(TPMSSensor *frontSensor,
  * @details Same logic as updateFrontSensorUI but for rear tire UI elements
  *          (ui_Pressure2, ui_TempText2, ui_BatteryText2, ui_Battery2, ui_BatteryBar2, ui_TPMSicon2, ui_BTicon2)
  */
-void UIController::updateRearSensorUI(TPMSSensor *rearSensor, float rearIdealPSI,
-							  uint32_t currentTime) {
-	char buf[16];
-	State &state = State::getInstance();
-	
-	// Display pressure in selected unit
-	if (state.getPressureUnit() == "BAR") {
-		snprintf(buf, sizeof(buf), "%.2f", rearSensor->getPressureBar());
-	} else {
-		snprintf(buf, sizeof(buf), "%.1f", rearSensor->getPressurePSI());
-	}
-	lv_label_set_text(ui_Pressure2, buf);
-	
-	// Reset label color to theme text color when sensor is synchronized
-	lv_obj_set_style_text_color(ui_Pressure2,
-								ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-								LV_PART_MAIN );
-	snprintf(buf, sizeof(buf), "%.1f °C", rearSensor->getTemperatureC());
-	lv_label_set_text(ui_TempText2, buf);
-
-	snprintf(buf, sizeof(buf), "%d%%", rearSensor->getBatteryLevel());
-	lv_label_set_text(ui_BatteryText2, buf);
-
-	lv_arc_set_value(ui_Battery2, static_cast<int>(rearSensor->getBatteryLevel()));
-	lv_bar_set_value(ui_BatteryBar2, static_cast<int>(rearSensor->getTemperatureC()),
-					 LV_ANIM_ON);
-
-	// Change bar color to blue if temperature is below 10°C
-	if (rearSensor->getTemperatureC() < 10.0f) {
-		// On cold temperatures use STANDARD and BRIGHT theme colors
-		lv_obj_set_style_bg_color(ui_BatteryBar2,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_STANDARD),
-					  LV_PART_MAIN);
-		lv_obj_set_style_bg_color(ui_BatteryBar2,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_HOT),
-					  LV_PART_INDICATOR);
-	} else {
-		// Default (warmer) temperature: also use STANDARD and BRIGHT themed colors
-		lv_obj_set_style_bg_color(ui_BatteryBar2,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_STANDARD),
-					  LV_PART_MAIN);
-		lv_obj_set_style_bg_color(ui_BatteryBar2,
-					  ui_theme_get_lv_color(UI_THEME_COLOR_BRIGHT),
-					  LV_PART_INDICATOR);
-	}
-
-	// Update pressure indicator icon
-		if (rearSensor->getPressurePSI() < rearIdealPSI * 0.75f) {
-		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsred_png);
-	} else if (rearSensor->getPressurePSI() < rearIdealPSI * 0.9f) {
-		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsyellow_png);
-	} else {
-		lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	}
-
-	// Update BLE connection status icon
-	if (rearSensor->getTimestamp() + 200 < currentTime) {
-		lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
-		
-	} else {
-		lv_image_set_src(ui_BTicon2, &ui_img_bton_png);
-		
-	}
-}
+// updateRearSensorUI moved to UIBikeController
 
 /**
  * @brief Clear front sensor UI when sensor is not available
@@ -361,75 +205,14 @@ void UIController::updateRearSensorUI(TPMSSensor *rearSensor, float rearIdealPSI
  * @details Resets all front sensor UI elements to default/empty state.
  *          Blinking (white <-> black) indicates sensor is not synchronized.
  */
-void UIController::clearFrontSensorUI(bool applyBlink) {
-	lv_label_set_text(ui_Pressure1, "---");
-
-	// Apply blinking effect only if requested: white when blink state is true,
-	// black when false
-	if (applyBlink) {
-		if (m_labelBlinkState) {
-			// Blink: use theme text color
-			lv_obj_set_style_text_color(ui_Pressure1,
-										ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-										LV_PART_MAIN);
-		} else {
-			// Blink off: use background color from theme
-			lv_obj_set_style_text_color(ui_Pressure1,
-										ui_theme_get_lv_color(UI_THEME_COLOR_BACKGROUND),
-										LV_PART_MAIN);
-		}
-	} else {
-		// Reset to theme text color when not blinking
-		lv_obj_set_style_text_color(ui_Pressure1,
-					    ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-					    LV_PART_MAIN);
-	}
-
-	lv_label_set_text(ui_TempText1, "-- °C");
-	lv_label_set_text(ui_BatteryText1, "--%");
-	lv_arc_set_value(ui_Battery1, 0);
-	lv_bar_set_value(ui_BatteryBar1, -10, LV_ANIM_ON);
-	lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
-	/* Chroma key removed - image sources set without colorkey */
-}
+// clearFrontSensorUI moved to UIBikeController
 
 /**
  * @brief Clear rear sensor UI when sensor is not available
  * @param applyBlink If true, apply 500ms blink effect to pressure label
  * @details Same as clearFrontSensorUI but for rear tire UI elements
  */
-void UIController::clearRearSensorUI(bool applyBlink) {
-	lv_label_set_text(ui_Pressure2, "---");
-
-	// Apply blinking effect only if requested: white when blink state is true,
-	// black when false
-	if (applyBlink) {
-		if (m_labelBlinkState) {
-			// Blink on: theme text color
-			lv_obj_set_style_text_color(ui_Pressure2,
-										ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-										LV_PART_MAIN);
-		} else {
-			// Blink off: theme background color
-			lv_obj_set_style_text_color(ui_Pressure2,
-										ui_theme_get_lv_color(UI_THEME_COLOR_BACKGROUND),
-										LV_PART_MAIN);
-		}
-	} else {
-		// Reset to theme text color when not blinking
-		lv_obj_set_style_text_color(ui_Pressure2,
-					    ui_theme_get_lv_color(UI_THEME_COLOR_TEXT),
-					    LV_PART_MAIN);
-	}
-
-	lv_label_set_text(ui_TempText2, "-- °C");
-	lv_label_set_text(ui_BatteryText2, "--%");
-	lv_arc_set_value(ui_Battery2, 0);
-	lv_bar_set_value(ui_BatteryBar2, -10, LV_ANIM_ON);
-	lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-	lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
-}
+// clearRearSensorUI moved to UIBikeController
 
 /**
  * @brief Update alert icons based on sensor alert flags
@@ -438,22 +221,7 @@ void UIController::clearRearSensorUI(bool applyBlink) {
  * @details If any sensor has alert flag set, blinks alert icons (ui_Alert1, ui_Alert2)
  *          at 250ms period. Shows idle icon when no alerts active.
  */
-void UIController::updateAlertIcons(bool alertFront, bool alertRear) {
-	if (alertFront || alertRear) {
-		// Blink: show alert when blink state is true, hide when false
-		if (m_alertBlinkState) {
-			lv_image_set_src(ui_Alert1, &ui_img_alert_png);
-			lv_image_set_src(ui_Alert2, &ui_img_alert_png);
-		} else {
-			lv_image_set_src(ui_Alert1, &ui_img_idle_png);
-			lv_image_set_src(ui_Alert2, &ui_img_idle_png);
-		}
-	} else {
-		// No alert - show idle
-		lv_image_set_src(ui_Alert1, &ui_img_idle_png);
-		lv_image_set_src(ui_Alert2, &ui_img_idle_png);
-	}
-}
+// updateAlertIcons moved to UIBikeController
 
 /**
  * @brief Update blink states for alerts and labels
@@ -461,16 +229,4 @@ void UIController::updateAlertIcons(bool alertFront, bool alertRear) {
  * @details Toggles alert blink state every 250ms (for alert icons)
  *          and label blink state every 500ms (for unsynchronized sensor labels)
  */
-void UIController::updateAlertBlinkState(uint32_t currentTime) {
-	// Toggle blink state every 250ms
-	if (currentTime - m_lastBlinkTime >= 250) {
-		m_alertBlinkState = !m_alertBlinkState;
-		m_lastBlinkTime = currentTime;
-	}
-
-	// Toggle label blink state every 500ms
-	if (currentTime - m_lastLabelBlinkTime >= 500) {
-		m_labelBlinkState = !m_labelBlinkState;
-		m_lastLabelBlinkTime = currentTime;
-	}
-}
+// updateAlertBlinkState moved to UIBikeController
