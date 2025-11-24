@@ -755,7 +755,7 @@ void Application::initializeLabelsCallback(void *arg) {
  * @brief Callback to update sensor data labels on main screen
  * @param arg Unused parameter (required by lv_async_call signature)
  * @details Retrieves sensor data from State, updates alert blink state,
- *          and calls UIController to refresh all sensor displays
+ *          and calls UIBikeController to refresh all main-screen sensor displays
  */
 void Application::updateLabelsCallback(void *arg) {
 	(void)arg;

@@ -50,7 +50,8 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 ├── main/
 │   ├── main.cpp                 - Entry point (app_main)
 │   ├── Application.cpp/h        - Main application logic and control flow
-│   ├── UIController.cpp/h       - LVGL UI management
+│   ├── UIController.cpp/h       - LVGL timing and screen transition management
+│   ├── UIBikeController.cpp/h   - Main-screen UI (sensor displays, alerts)
 │   ├── DisplayManager.cpp/h     - LCD initialization (Lovyan GFX)
 │   ├── State.cpp/h              - Global state management (singleton)
 │   ├── ConfigManager.cpp/h      - NVS configuration handling
@@ -83,7 +84,8 @@ The application follows a clean separation of concerns with a singleton-based ar
 ### Core Components
 
 - **Application**: Singleton managing initialization, BLE setup, button logic, screen transitions, and mode switching (normal/pairing/config)
-- **UIController**: Handles all LVGL UI updates and rendering via async callbacks
+- **UIController**: Responsible for LVGL tick/timer lifecycle and managing screen transitions (splash/main/pair)
+- **UIBikeController**: Responsible for main screen LVGL updates (pressure, temperature, battery, alerts)
 - **State**: Singleton storing global sensor data (pressure, temperature, battery, signal strength)
 - **ConfigManager**: Persistent storage interface for NVS (addresses, pressures, brightness)
 - **PairController**: State machine for guided sensor pairing process
@@ -92,12 +94,31 @@ The application follows a clean separation of concerns with a singleton-based ar
 - **DisplayManager**: Initializes and configures the LCD display
 - **TPMSScanCallbacks**: BLE advertisement parsing and sensor discovery
 
+### UI Controllers (overview)
+
+- **UIController (singleton)**: LVGL tick/timer lifecycle and top-level screen transition control (splash, main, pair).
+- **UIBikeController (singleton)**: Handles main-screen UI updates — the widgets that display pressure, temperature, battery, icons and blinking states.
+
+Example usage (call from application control loop via LVGL async calls):
+```cpp
+// Initialize main-screen labels after UI is created:
+lv_async_call([](void *arg){ (void)arg; UIBikeController::instance().initializeLabels(); }, nullptr);
+
+// Periodic update of sensor UI (on sorted LVGL thread):
+lv_async_call([](void *arg){ (void)arg; 
+  uint32_t currentTime = esp_timer_get_time() / 1000;
+  UIBikeController::instance().updateAlertBlinkState(currentTime);
+  UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, frontIdeal, rearIdeal, currentTime);
+}, nullptr);
+```
+
 ### Data Flow
 
 1. BLE scan callbacks detect TPMS sensors and parse advertisements
 2. Sensor data is stored in the global State singleton
 3. Application triggers UI updates via LVGL async callbacks
-4. UIController reads from State and updates LVGL widgets
+4. UIBikeController reads from State and updates main-screen LVGL widgets (pressure, temp, battery, icons).
+  UIController maintains LVGL tick/task and triggers screen transitions.
 5. Button presses are handled in Application control task
 6. Configuration changes are persisted via ConfigManager
 

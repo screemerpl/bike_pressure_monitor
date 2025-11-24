@@ -12,15 +12,16 @@
 
 /**
  * @class UIController
- * @brief LVGL UI manager and sensor display controller
+ * @brief LVGL UI manager and screen transitions controller
  * @details Responsibilities:
  *          - Start/manage LVGL tick timer (1ms resolution)
  *          - Run LVGL handler task (~50 FPS)
- *          - Update pressure/temperature/battery UI elements
- *          - Handle alert icon blinking (250ms period)
- *          - Handle label blinking for unsynchronized sensors (500ms period)
- *          - Manage screen transitions (splash, main, pair)
- *          - Apply color coding (green/yellow/red) based on pressure thresholds
+ *          - Manage splash screen, main/pair screen transitions and splash version label
+ *          - Provide LVGL task lifecycle management and utility helpers
+ *
+ * Note: Sensor-specific widget updates (pressure/temperature/battery/alerts) are
+ * handled by `UIBikeController` (see `UIBikeController.h`). This class keeps
+ * LVGL timing and screen switching responsibilities separate from main-screen UI logic.
  */
 class UIController {
 public:

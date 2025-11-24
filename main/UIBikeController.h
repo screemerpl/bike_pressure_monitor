@@ -14,11 +14,14 @@
  * @class UIBikeController
  * @brief Controller for main bike screen UI elements
  * @details Responsibilities:
- *          - Initialize labels on main screen
+ *          - Initialize labels on the main (bike) screen and manage UI widgets
  *          - Update sensor displays (pressure, temperature, battery)
- *          - Handle alert icon blinking
- *          - Handle label blinking for unsynchronized sensors
- *          - Apply color coding based on pressure thresholds
+ *          - Update pressure status icons and BLE connection indicators
+ *          - Handle alert icon blinking (250ms) and label blinking (500ms)
+ *          - Apply color coding based on pressure thresholds and temperature
+ *
+ * This class was introduced to isolate the main-screen UI logic from the LVGL
+ * lifecycle and screen transition responsibilities (which remain in `UIController`).
  */
 class UIBikeController {
 public:

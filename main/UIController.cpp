@@ -1,9 +1,11 @@
 /**
  * @file UIController.cpp
- * @brief UI controller implementation
- * @details Implements LVGL UI updates for TPMS sensor display.
- *          Handles pressure thresholds, color coding, blinking effects,
- *          and unit conversions (PSI/BAR).
+ * @brief LVGL timing and screen transition controller implementation
+ * @details This file implements the UIController singleton responsible for
+ *          LVGL timing (tick and task) and screen transitions (splash/main/pair).
+ *          The sensor-specific main screen UI updates have been moved to
+ *          `UIBikeController` (main/UIBikeController.*) so main-screen logic is
+ *          separated from LVGL lifecycle responsibilities.
  */
 
 #include "UIController.h"
@@ -154,79 +156,8 @@ void UIController::showPairScreen() {
 	lv_screen_load_anim(ui_Pair, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
 }
 
-/**
- * @brief Initialize all UI labels with default values
- * @details Sets pressure unit label from config and clears all
- *          sensor displays to "---", resets arcs/bars to 0, and
- *          sets icons to default (black TPMS, BT off, idle alert)
- */
-// initializeLabels moved to UIBikeController
-
-/**
- * @brief Update all sensor UI elements
- * @param frontSensor Front tire sensor (nullptr if not synchronized)
- * @param rearSensor Rear tire sensor (nullptr if not synchronized)
- * @param frontIdealPSI Target pressure for front tire
- * @param rearIdealPSI Target pressure for rear tire
- * @param currentTime Current timestamp in milliseconds
- * @details Updates both front and rear sensor displays, applies blinking
- *          to unsynchronized sensors, and updates alert icons
- */
-// updateSensorUI moved to UIBikeController
-
-/**
- * @brief Update front sensor UI display
- * @param frontSensor Front tire sensor data
- * @param frontIdealPSI Target pressure for front tire
- * @param currentTime Current timestamp in milliseconds
- * @details Updates pressure (PSI or BAR based on State::pressureUnit),
- *          temperature, battery level, pressure status icon:
- *          - Red: pressure < 75% of ideal
- *          - Yellow: pressure < 90% of ideal
- *          - Black: pressure >= 90% of ideal
- *          Temperature bar color: Blue if temp < 10°C, green otherwise
- *          BLE icon: ON if data received within last 200ms
- */
-// updateFrontSensorUI moved to UIBikeController
-
-/**
- * @brief Update rear sensor UI display
- * @param rearSensor Rear tire sensor data
- * @param rearIdealPSI Target pressure for rear tire
- * @param currentTime Current timestamp in milliseconds
- * @details Same logic as updateFrontSensorUI but for rear tire UI elements
- *          (ui_Pressure2, ui_TempText2, ui_BatteryText2, ui_Battery2, ui_BatteryBar2, ui_TPMSicon2, ui_BTicon2)
- */
-// updateRearSensorUI moved to UIBikeController
-
-/**
- * @brief Clear front sensor UI when sensor is not available
- * @param applyBlink If true, apply 500ms blink effect to pressure label
- * @details Resets all front sensor UI elements to default/empty state.
- *          Blinking (white <-> black) indicates sensor is not synchronized.
- */
-// clearFrontSensorUI moved to UIBikeController
-
-/**
- * @brief Clear rear sensor UI when sensor is not available
- * @param applyBlink If true, apply 500ms blink effect to pressure label
- * @details Same as clearFrontSensorUI but for rear tire UI elements
- */
-// clearRearSensorUI moved to UIBikeController
-
-/**
- * @brief Update alert icons based on sensor alert flags
- * @param alertFront Front sensor alert status
- * @param alertRear Rear sensor alert status
- * @details If any sensor has alert flag set, blinks alert icons (ui_Alert1, ui_Alert2)
- *          at 250ms period. Shows idle icon when no alerts active.
- */
-// updateAlertIcons moved to UIBikeController
-
-/**
- * @brief Update blink states for alerts and labels
- * @param currentTime Current timestamp in milliseconds
- * @details Toggles alert blink state every 250ms (for alert icons)
- *          and label blink state every 500ms (for unsynchronized sensor labels)
- */
-// updateAlertBlinkState moved to UIBikeController
+// NOTE: All sensor-specific main screen UI methods (initializeLabels,
+// updateSensorUI, updateFrontSensorUI, updateRearSensorUI, clearFrontSensorUI,
+// clearRearSensorUI, updateAlertIcons and updateAlertBlinkState) have been
+// moved to `UIBikeController` to keep UIController focused on LVGL timing and
+// top-level screen transitions. See `main/UIBikeController.*` for details.
