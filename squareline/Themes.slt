@@ -1,8 +1,201 @@
 {
   "deftheme": {
     "name": "Default",
-    "properties": []
+    "properties": [
+      {
+        "nid": 1000615,
+        "strtype": "THEME_COLOR",
+        "strval": "Background",
+        "intarray": [
+          20,
+          23,
+          27,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000616,
+        "strtype": "THEME_COLOR",
+        "strval": "Text",
+        "intarray": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000617,
+        "strtype": "THEME_COLOR",
+        "strval": "Standard",
+        "intarray": [
+          0,
+          78,
+          18,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000618,
+        "strtype": "THEME_COLOR",
+        "strval": "Bright",
+        "intarray": [
+          20,
+          217,
+          0,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000619,
+        "strtype": "THEME_COLOR",
+        "strval": "ColdLow",
+        "intarray": [
+          38,
+          0,
+          255,
+          255
+        ],
+        "InheritedType": 0
+      }
+    ]
   },
-  "themes": [],
+  "themes": [
+    {
+      "name": "Toyo",
+      "properties": [
+        {
+          "nid": 1000615,
+          "strtype": "THEME_COLOR",
+          "strval": "Background",
+          "intarray": [
+            27,
+            20,
+            20,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000616,
+          "strtype": "THEME_COLOR",
+          "strval": "Text",
+          "intarray": [
+            255,
+            184,
+            184,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000617,
+          "strtype": "THEME_COLOR",
+          "strval": "Standard",
+          "intarray": [
+            82,
+            65,
+            65,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000618,
+          "strtype": "THEME_COLOR",
+          "strval": "Bright",
+          "intarray": [
+            168,
+            36,
+            36,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000619,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "ColdLow",
+          "intarray": [
+            38,
+            0,
+            255,
+            255
+          ],
+          "InheritedType": 0
+        }
+      ]
+    },
+    {
+      "name": "Hybrid",
+      "properties": [
+        {
+          "nid": 1000615,
+          "strtype": "THEME_COLOR",
+          "strval": "Background",
+          "intarray": [
+            1,
+            17,
+            39,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000616,
+          "strtype": "THEME_COLOR",
+          "strval": "Text",
+          "intarray": [
+            190,
+            190,
+            190,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000617,
+          "strtype": "THEME_COLOR",
+          "strval": "Standard",
+          "intarray": [
+            1,
+            0,
+            108,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000618,
+          "strtype": "THEME_COLOR",
+          "strval": "Bright",
+          "intarray": [
+            40,
+            48,
+            216,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000619,
+          "strtype": "THEME_COLOR",
+          "strval": "ColdLow",
+          "intarray": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "InheritedType": 0
+        }
+      ]
+    }
+  ],
   "selected_theme": "Default"
 }

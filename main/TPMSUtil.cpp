@@ -35,17 +35,7 @@ TPMSUtil::TPMSUtil(const std::string& address, const std::string& manufacturerDa
 	this->parseOther();        // Extract battery and alert
 	
 	// Record timestamp (milliseconds since boot)
-	this->timestamp = esp_timer_get_time() / 1000;
-	this->m_timestamp = this->timestamp;
-	
-	// Copy to legacy public members for backward compatibility
-	memcpy(this->identifier, m_identifier.data(), 3);
-	this->sensorNumber = m_sensorNumber;
-	this->pressurePSI = m_pressurePSI;
-	this->pressureBar = m_pressureBar;
-	this->temperatureC = m_temperatureC;
-	this->batteryLevel = m_batteryLevel;
-	this->alert = m_alert;
+	m_timestamp = esp_timer_get_time() / 1000;
 }
 
 /**

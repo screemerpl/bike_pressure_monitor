@@ -1,6 +1,6 @@
-# Bike Pressure Monitor
+# Universal Pressure Monitor
 
-A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32-C3 with an LCD display powered by LVGL.
+A wireless tire pressure monitoring system (TPMS) for motorcycles and cars built on ESP32-C3 with an LCD display powered by LVGL.
 
 ## Features
 
@@ -16,6 +16,7 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 - **WiFi configuration mode** - web-based setup interface
 - **Pairing mode** - guided on-screen sensor pairing process
 - **Configurable ideal pressures** for front and rear tires
+- **Pressure unit selection** - PSI or BAR
 - **Brightness control** - 5 levels (10%, 30%, 50%, 75%, 100%)
 - **Persistent settings** - all configuration stored in NVS (Non-Volatile Storage)
 
@@ -30,14 +31,14 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 ### Web Interface
 - **WiFi AP Mode** - creates "TPMS-Config" access point (password: tpms1234)
 - **Configuration portal** - accessible at http://192.168.4.1
-- **Live sensor view** - real-time JSON API for sensor data
-- **OTA updates** - over-the-air firmware updates via web interface
+- **Live sensor view** - real-time monitoring of detected sensors
+- **Configuration management** - set sensor addresses, ideal pressures, pressure unit
 - **Factory reset** - clear all configuration and restart
 
 ## Hardware
 - **Board:** ESP32-242412N (non-touch version)
 - **MCU:** ESP32-C3 (single core, RISC-V architecture)
-- **Flash:** 4MB
+- **Flash:** 4MB (3MB for firmware, ~960KB for SPIFFS storage)
 - **Display:** LCD with Lovyan GFX driver support
 - **Sensors:** BLE TPMS sensors (front and rear wheels)
 - **Button:** GPIO9 (BOOT button)
@@ -49,7 +50,9 @@ A wireless tire pressure monitoring system (TPMS) for motorcycles built on ESP32
 ├── main/
 │   ├── main.cpp                 - Entry point (app_main)
 │   ├── Application.cpp/h        - Main application logic and control flow
-│   ├── UIController.cpp/h       - LVGL UI management
+│   ├── UIController.cpp/h       - LVGL timing and screen transition management
+│   ├── UIBikeController.cpp/h   - Main-screen UI (motorcycle mode, 2 sensors)
+│   ├── UICarController.cpp/h    - Main-screen UI (car mode, 4 sensors)
 │   ├── DisplayManager.cpp/h     - LCD initialization (Lovyan GFX)
 │   ├── State.cpp/h              - Global state management (singleton)
 │   ├── ConfigManager.cpp/h      - NVS configuration handling
@@ -82,7 +85,8 @@ The application follows a clean separation of concerns with a singleton-based ar
 ### Core Components
 
 - **Application**: Singleton managing initialization, BLE setup, button logic, screen transitions, and mode switching (normal/pairing/config)
-- **UIController**: Handles all LVGL UI updates and rendering via async callbacks
+- **UIController**: Responsible for LVGL tick/timer lifecycle and managing screen transitions (splash/main/pair)
+- **UIBikeController**: Responsible for main screen LVGL updates for motorcycle mode (pressure, temperature, battery, alerts)
 - **State**: Singleton storing global sensor data (pressure, temperature, battery, signal strength)
 - **ConfigManager**: Persistent storage interface for NVS (addresses, pressures, brightness)
 - **PairController**: State machine for guided sensor pairing process
@@ -91,12 +95,40 @@ The application follows a clean separation of concerns with a singleton-based ar
 - **DisplayManager**: Initializes and configures the LCD display
 - **TPMSScanCallbacks**: BLE advertisement parsing and sensor discovery
 
+### UI Controllers (overview)
+
+- **UIController (singleton)**: LVGL tick/timer lifecycle and top-level screen transition control (splash, main, pair).
+- **UIBikeController (singleton)**: Handles main-screen UI updates for motorcycle mode — the widgets that display pressure, temperature, battery, icons and blinking states.
+- **UICarController (singleton)**: Handles car-mode main-screen (4 sensors) UI updates — pressure, temperature, battery, icons and blinking states for 4 sensors.
+
+Example usage (call from application control loop via LVGL async calls):
+```cpp
+// Initialize main-screen labels after UI is created:
+// For motorcycle mode:
+lv_async_call([](void *arg){ (void)arg; UIBikeController::instance().initializeLabels(); }, nullptr);
+// For car:
+lv_async_call([](void *arg){ (void)arg; UICarController::instance().initializeLabels(); }, nullptr);
+
+// Periodic update of sensor UI (on sorted LVGL thread):
+lv_async_call([](void *arg){ (void)arg; 
+  uint32_t currentTime = esp_timer_get_time() / 1000;
+  // Motorcycle example
+  UIBikeController::instance().updateAlertBlinkState(currentTime);
+  UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, frontIdeal, rearIdeal, currentTime);
+  // Car example (front-left, front-right, rear-left, rear-right)
+  UICarController::instance().updateAlertBlinkState(currentTime);
+  // Order of parameters: FrontLeft, RearLeft, FrontRight, RearRight (mapped to C1..C4 UI)
+  UICarController::instance().updateSensorUI(s_fl, s_rl, s_fr, s_rr, ideal_fl, ideal_rl, ideal_fr, ideal_rr, currentTime);
+}, nullptr);
+```
+
 ### Data Flow
 
 1. BLE scan callbacks detect TPMS sensors and parse advertisements
 2. Sensor data is stored in the global State singleton
 3. Application triggers UI updates via LVGL async callbacks
-4. UIController reads from State and updates LVGL widgets
+4. UIBikeController reads from State and updates main-screen LVGL widgets (pressure, temp, battery, icons) for motorcycle mode.
+  UIController maintains LVGL tick/task and triggers screen transitions.
 5. Button presses are handled in Application control task
 6. Configuration changes are persisted via ConfigManager
 
@@ -143,15 +175,20 @@ idf.py build
 
 ### Default Settings (NVS)
 
-Configuration is stored in Non-Volatile Storage and persists across reboots:
+Configuration is stored in Non-Volatile Storage and persists across reboots.
+Current configuration format (mode, addresses array, ideal_psi array):
 
 ```json
 {
-  "front_address": "80:ea:ca:10:05:32",
-  "rear_address": "81:ea:ca:20:04:10",
-  "front_ideal_psi": 36.0,
-  "rear_ideal_psi": 42.0,
-  "brightness_index": 4
+  "mode": 0,                      // 0 = Motorcycle mode, 1 = Car mode
+  "addresses": [
+    "80:ea:ca:10:05:32",
+    "81:ea:ca:20:04:10",
+    "", ""                    // car mode would use up to 4 addresses
+  ],
+  "ideal_psi": [36.0, 42.0, 36.0, 42.0],
+  "brightness_index": 4,
+  "pressure_unit": "PSI"
 }
 ```
 
@@ -166,12 +203,9 @@ Access the web interface to configure settings:
    - `GET /` - Web interface
    - `GET /api/sensors` - Current sensor data (JSON)
    - `GET /api/config` - Current configuration (JSON)
-   - `POST /api/config` - Update configuration
-   - `POST /api/pair` - Manual sensor pairing
+   - `POST /api/config` - Update configuration (addresses, ideal PSI, pressure unit)
    - `POST /api/clear` - Factory reset
    - `POST /api/restart` - Restart device
-   - `POST /api/ota` - Upload firmware for OTA update
-   - `GET /api/ota/status` - OTA update status
 
 ### Pairing Mode
 
@@ -204,9 +238,13 @@ The device operates in three distinct modes:
 ### 3. WiFi Configuration Mode
 - Starts WiFi AP: TPMS-Config
 - Runs HTTP server on 192.168.4.1
-- Provides web interface for all settings
-- Supports OTA firmware updates
-- Long press button again to exit
+- Provides web interface for configuration:
+  - View discovered TPMS sensors
+  - Configure sensor addresses (front/rear)
+  - Set ideal tire pressures
+  - Select pressure unit (PSI/BAR)
+  - Factory reset option
+- Long press button again to exit and return to normal mode
 
 ## UI Screens
 
@@ -236,10 +274,12 @@ The device operates in three distinct modes:
 The project is optimized to fit within the ESP32-C3's flash constraints:
 
 - **Compiler optimization**: `-Os` (size optimization)
-- **Log levels**: 
-  - Application: WARN
-  - Bootloader: WARN
-  - BLE/NimBLE: WARN
+- **Log levels**: INFO level globally, WARN for bootloader
+- **Flash partition layout**:
+  - NVS: 20KB (0x9000 - 0xE000)
+  - PHY: 4KB (0xE000 - 0x10000)
+  - **Factory (App)**: 3MB (0x10000 - 0x310000) - no OTA, single large firmware partition
+  - **SPIFFS**: ~960KB (0x310000 - 0x400000) - increased storage for large configurations
 - **BLE configuration**:
   - Reduced connection limits
   - Optimized buffer sizes
@@ -299,13 +339,19 @@ This project is provided as-is for educational and personal use.
 
 ## Repository
 
-**GitHub**: [screemerpl/bike_pressure_monitor](https://github.com/screemerpl/bike_pressure_monitor)  
+**GitHub**: [screemerpl/bike_pressure_monitor](https://github.com/screemerpl/bike_pressure_monitor)  (repository; project name: Universal Pressure Monitor)
 **Branch**: develop
 
 ## Author
 
-Created for motorcycle tire pressure monitoring with ESP32-C3.
+Created for universal tire pressure monitoring (motorcycle & car) with ESP32-C3.
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: November 2025  
+**Features**:
+- BLE TPMS sensor monitoring with real-time pressure/temperature display
+- WiFi-based configuration (no OTA - uses larger single firmware partition)
+- LVGL-based touchscreen UI with color-coded pressure indicators
+- Persistent configuration via NVS
+- Up to 3MB available for firmware (no OTA overhead)

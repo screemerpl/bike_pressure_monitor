@@ -16,38 +16,47 @@ extern "C" {
 #include "components/ui_comp.h"
 #include "components/ui_comp_hook.h"
 #include "ui_events.h"
+#include "ui_theme_manager.h"
+#include "ui_themes.h"
 
+#include "ui_img_manager.h"
 
 ///////////////////// SCREENS ////////////////////
 
+#include "screens/ui_Black.h"
 #include "screens/ui_Splash.h"
 #include "screens/ui_Main.h"
-#include "screens/ui_Black.h"
+#include "screens/ui_CarMain.h"
 #include "screens/ui_Pair.h"
 
 ///////////////////// VARIABLES ////////////////////
 
-// Pair screen elements
-extern lv_obj_t * ui_Label10;
-extern lv_obj_t * ui_Label11;
-extern lv_obj_t * ui_Spinner4;
-extern lv_obj_t * ui_Label12;
-extern lv_obj_t * ui_Label13;
 
 // EVENTS
 
 extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-LV_IMG_DECLARE(ui_img_942102620);    // assets/splashlogo-pms.png
-LV_IMG_DECLARE(ui_img_tpmsred_png);    // assets/tpmsred.png
-LV_IMG_DECLARE(ui_img_tpmsyellow_png);    // assets/tpmsyellow.png
-LV_IMG_DECLARE(ui_img_temp_png);    // assets/temp.png
-LV_IMG_DECLARE(ui_img_btoff_png);    // assets/BToff.png
-LV_IMG_DECLARE(ui_img_bton_png);    // assets/BTon.png
-LV_IMG_DECLARE(ui_img_idle_png);    // assets/idle.png
-LV_IMG_DECLARE(ui_img_alert_png);    // assets/alert.png
-LV_IMG_DECLARE(ui_img_tpmsblack_png);    // assets/tpmsblack.png
+LV_IMG_DECLARE(ui_img_1818877690);   // assets/splashlogo-kawa.png
+extern lv_image_dsc_t ui_img_tpmsred_png;   // assets/tpmsred.png
+void ui_img_tpmsred_png_load();
+extern lv_image_dsc_t ui_img_tpmsyellow_png;   // assets/tpmsyellow.png
+void ui_img_tpmsyellow_png_load();
+extern lv_image_dsc_t ui_img_temp_png;   // assets/temp.png
+void ui_img_temp_png_load();
+extern lv_image_dsc_t ui_img_btoff_png;   // assets/BToff.png
+void ui_img_btoff_png_load();
+extern lv_image_dsc_t ui_img_bton_png;   // assets/BTon.png
+void ui_img_bton_png_load();
+extern lv_image_dsc_t ui_img_idle_png;   // assets/idle.png
+void ui_img_idle_png_load();
+extern lv_image_dsc_t ui_img_alert_png;   // assets/alert.png
+void ui_img_alert_png_load();
+extern lv_image_dsc_t ui_img_tpmsblack_png;   // assets/tpmsblack.png
+void ui_img_tpmsblack_png_load();
+LV_IMG_DECLARE(ui_img_toyotared_png);   // assets/toyotared.png
+LV_IMG_DECLARE(ui_img_toyotablue_png);   // assets/toyotablue.png
+
 
 // UI INIT
 void ui_init(void);

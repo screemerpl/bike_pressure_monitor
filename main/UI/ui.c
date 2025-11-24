@@ -32,18 +32,31 @@ void ui_init(void)
     lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
                                                true, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
+ //   ui_img_1818877690_load();
+    ui_img_tpmsred_png_load();
+    ui_img_tpmsyellow_png_load();
+    ui_img_temp_png_load();
+    ui_img_btoff_png_load();
+    ui_img_bton_png_load();
+    ui_img_idle_png_load();
+    ui_img_alert_png_load();
+    ui_img_tpmsblack_png_load();
+  //  ui_img_toyotared_png_load();
+  //  ui_img_toyotablue_png_load();
+    ui_Black_screen_init();
     ui_Splash_screen_init();
     ui_Main_screen_init();
-    ui_Black_screen_init();
+    ui_CarMain_screen_init();
     ui_Pair_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
-    lv_disp_load_scr(ui_Splash);
+    lv_disp_load_scr(ui_Black);
 }
 
 void ui_destroy(void)
 {
+    ui_Black_screen_destroy();
     ui_Splash_screen_destroy();
     ui_Main_screen_destroy();
-    ui_Black_screen_destroy();
+    ui_CarMain_screen_destroy();
     ui_Pair_screen_destroy();
 }

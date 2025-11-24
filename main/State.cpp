@@ -40,10 +40,10 @@ void State::cleanupOldSensors() {
 	
 	// Iterate through all sensors
 	while (it != m_data.end()) {
-		TPMSUtil *sensor = it->second;
+		TPMSSensor *sensor = it->second;
 
 		// Check if sensor data is stale (older than threshold)
-		if (currentTime - sensor->timestamp > threshold) {
+		if (currentTime - sensor->getTimestamp() > threshold) {
 			ESP_LOGD(TAG, "Removing old sensor: %s", it->first.c_str());
 
 			delete sensor;			 // Free TPMSUtil object memory

@@ -25,20 +25,36 @@
 #ifndef MAIN_TPMSUTIL_H_
 #define MAIN_TPMSUTIL_H_
 
+#include "TPMSSensor.h"  // Base class
 #include <string>      // std::string
 #include <cstdint>     // uint64_t
 #include <array>       // std::array
 
 /**
  * @class TPMSUtil
- * @brief TPMS sensor data container and parser
+ * @brief TPMS Type 1 sensor data container and parser
  * @details Validates and parses BLE manufacturer data from TPMS sensors.
  *          Provides both PSI and BAR pressure readings, temperature,
  *          battery status, and alert flags.
+ *          Inherits from TPMSSensor for polymorphic handling.
  */
-class TPMSUtil {
+class TPMSUtil : public TPMSSensor {
 public:
 	virtual ~TPMSUtil();
+	
+	// ========================================================================
+	// Base class interface implementation
+	// ========================================================================
+	std::string getSensorType() const override { return "Type1"; }
+	float getPressurePSI() const override { return m_pressurePSI; }
+	float getPressureBar() const override { return m_pressureBar; }
+	float getTemperatureC() const override { return m_temperatureC; }
+	const std::string& getAddress() const override { return m_address; }
+	uint64_t getTimestamp() const override { return m_timestamp; }
+	bool getAlert() const override { return m_alert; }
+	uint8_t getBatteryLevel() const override { return static_cast<uint8_t>(m_batteryLevel); }  // Returns 0-255 for Type 1
+	uint8_t getWheelNumber() const override { return static_cast<uint8_t>(m_sensorNumber); }
+	const uint8_t* getSensorID() const override { return reinterpret_cast<const uint8_t*>(m_identifier.data()); }
 	
 	/**
 	 * @brief Check if manufacturer data is from a TPMS sensor
@@ -71,49 +87,13 @@ public:
 	 */
 	static TPMSUtil *parse(const std::string& manufacturerData, const std::string& address);
 
-	// Getters
+	// Getters (legacy, for backward compatibility)
 	
 	/** @brief Get sensor identifier (3-character array) */
 	const std::array<char, 3>& getIdentifier() const { return m_identifier; }
 	
 	/** @brief Get sensor number (1-4 for typical 4-wheel setup) */
-	char getSensorNumber() const { return m_sensorNumber; }
-	
-	/** @brief Get tire pressure in PSI */
-	float getPressurePSI() const { return m_pressurePSI; }
-	
-	/** @brief Get tire pressure in BAR */
-	float getPressureBar() const { return m_pressureBar; }
-	
-	/** @brief Get tire temperature in Celsius */
-	float getTemperatureC() const { return m_temperatureC; }
-	
-	/** @brief Get battery level (0-255) */
-	char getBatteryLevel() const { return m_batteryLevel; }
-	
-	/** @brief Get alert flag (true if pressure/temp out of range) */
-	bool getAlert() const { return m_alert; }
-	
-	/** @brief Get timestamp of last update (milliseconds since boot) */
-	uint64_t getTimestamp() const { return m_timestamp; }
-	
-	/** @brief Get sensor MAC address */
-	const std::string& getAddress() const { return m_address; }
-
-	// ========================================================================
-	// Legacy Public Members (Backward Compatibility)
-	// ========================================================================
-	// @deprecated These public members are kept for backward compatibility.
-	//             Use getter methods instead. Will be removed in future.
-	
-	char identifier[3];      ///< @deprecated Use getIdentifier()
-	char sensorNumber;       ///< @deprecated Use getSensorNumber()
-	float pressurePSI;       ///< @deprecated Use getPressurePSI()
-	float pressureBar;       ///< @deprecated Use getPressureBar()
-	float temperatureC;      ///< @deprecated Use getTemperatureC()
-	char batteryLevel;       ///< @deprecated Use getBatteryLevel()
-	bool alert;              ///< @deprecated Use getAlert()
-	uint64_t timestamp;      ///< @deprecated Use getTimestamp()
+	char getSensorNumber_Legacy() const { return m_sensorNumber; }
 
 private:
 	/**

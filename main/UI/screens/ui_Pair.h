@@ -14,12 +14,12 @@ extern "C" {
 extern void ui_Pair_screen_init(void);
 extern void ui_Pair_screen_destroy(void);
 extern lv_obj_t * ui_Pair;
-extern lv_obj_t * ui_Label9;
-extern lv_obj_t * ui_Label10;
-extern lv_obj_t * ui_Label11;
-extern lv_obj_t * ui_Spinner4;
-extern lv_obj_t * ui_Label12;
-extern lv_obj_t * ui_Label13;
+extern lv_obj_t * ui_PairOperation;
+extern lv_obj_t * ui_PairSensorName;
+extern lv_obj_t * ui_Status;
+extern lv_obj_t * ui_PairBusy;
+extern lv_obj_t * ui_PairTimeout;
+extern lv_obj_t * ui_PressKey;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

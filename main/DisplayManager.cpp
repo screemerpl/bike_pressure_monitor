@@ -1,5 +1,11 @@
 #include "DisplayManager.h"
+#include "State.h"
 #include "UI/ui.h"
+#include "UI/ui_themes.h"
+#include "UIController.h"
+#include "esp_heap_caps.h"
+#include "lvgl.h"
+#include "lvgl_spiffs_driver.h"
 #include <driver/gpio.h>
 #include <driver/ledc.h>
 #include <esp_log.h>
@@ -65,23 +71,24 @@ void DisplayManager::flushScreen(lv_display_t *disp, const lv_area_t *area,
 
 	// Swap bytes for correct color display (RGB565 byte order)
 	// Optimized: Process 2 pixels (4 bytes) at once using 32-bit swaps
-	const size_t pixels_aligned = pixels & ~1UL;  // Align to even number
-	
+	const size_t pixels_aligned = pixels & ~1UL; // Align to even number
+
 	for (size_t i = 0; i < pixels_aligned; i += 2) {
 		// Process 2 pixels at once (4 bytes = 1 uint32_t)
 		uint32_t *p32 = reinterpret_cast<uint32_t *>(&src16[i]);
 		uint32_t val = *p32;
-		
+
 		// Swap bytes in both pixels: AABB -> BBAA for each 16-bit word
-		uint32_t swapped = ((val & 0x00FF00FF) << 8) | ((val & 0xFF00FF00) >> 8);
+		uint32_t swapped =
+			((val & 0x00FF00FF) << 8) | ((val & 0xFF00FF00) >> 8);
 		*p32 = swapped;
 	}
-	
+
 	// Handle remaining pixel if odd count
 	if (pixels & 1UL) {
 		src16[pixels - 1] = lv_swap_bytes_16(src16[pixels - 1]);
 	}
-	
+
 	// Push image data to display via DMA
 	m_tft.pushImageDMA(area->x1, area->y1, w, h, src16);
 
@@ -95,9 +102,9 @@ void DisplayManager::flushScreen(lv_display_t *disp, const lv_area_t *area,
  *          allocates LVGL draw buffers, and initializes UI
  */
 void DisplayManager::init() {
-    // Set singleton instance pointer
-    DisplayManager::s_instance = this;
-	
+	// Set singleton instance pointer
+	DisplayManager::s_instance = this;
+
 	// Configure LEDC timer for PWM backlight control
 	ledc_timer_config_t ledc_timer = {
 		.speed_mode = LEDC_LOW_SPEED_MODE,
@@ -105,10 +112,9 @@ void DisplayManager::init() {
 		.timer_num = LEDC_TIMER_0,
 		.freq_hz = BACKLIGHT_FREQ,
 		.clk_cfg = LEDC_AUTO_CLK,
-		.deconfigure = false
-	};
+		.deconfigure = false};
 	ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
-	
+
 	// Configure LEDC channel for backlight pin
 	ledc_channel_config_t ledc_channel = {
 		.gpio_num = BACKLIGHT_PIN,
@@ -118,38 +124,42 @@ void DisplayManager::init() {
 		.timer_sel = LEDC_TIMER_0,
 		.duty = 0,
 		.hpoint = 0,
-		.flags = {}
-	};
+		.flags = {}};
 	ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
-	
+
 	// Set initial brightness to maximum (100%)
 	setBacklightBrightness(100);
-	
-    // Initialize TFT display driver
-    if (!m_tft.init()) {
-        ESP_LOGE(TAG, "m_tft.init() failed");
-        return;
-    }
-    
-    // Verify panel is properly configured
-    if (m_tft.panel() == nullptr) {
-        ESP_LOGW(TAG, "m_tft.panel() == nullptr - verify LovyanGFX board/panel configuration");
-        return;
-    }
 
-    // Initialize DMA for faster display updates
-    if (m_tft.panel() != nullptr) {
-        m_tft.initDMA();
-    } else {
-        ESP_LOGW(TAG, "Skipping initDMA because panel is null");
-    }
+	// Initialize TFT display driver
+	if (!m_tft.init()) {
+		ESP_LOGE(TAG, "m_tft.init() failed");
+		return;
+	}
 
-    // Start write transaction and clear screen
-    m_tft.startWrite();
-    m_tft.setColor(0, 0, 0);
+	// Verify panel is properly configured
+	if (m_tft.panel() == nullptr) {
+		ESP_LOGW(TAG, "m_tft.panel() == nullptr - verify LovyanGFX board/panel "
+					  "configuration");
+		return;
+	}
 
-    // Initialize LVGL library
-    lv_init();
+	// Initialize DMA for faster display updates
+	if (m_tft.panel() != nullptr) {
+		m_tft.initDMA();
+	} else {
+		ESP_LOGW(TAG, "Skipping initDMA because panel is null");
+	}
+
+	// Start write transaction and clear screen
+	m_tft.startWrite();
+	m_tft.setColor(0, 0, 0);
+
+	// Initialize LVGL library
+	lv_init();
+
+	// Register LVGL SPIFFS filesystem driver (enables "S:" prefix for image
+	// loading)
+	lvgl_spiffs_driver_register();
 
 	// Allocate first LVGL draw buffer (DMA capable memory)
 	lv_draw_buf_mem = (unsigned char *)heap_caps_malloc(
@@ -174,9 +184,94 @@ void DisplayManager::init() {
 	lv_display_set_buffers(disp, lv_draw_buf_mem, lv_draw_buf_mem2,
 						   DRAW_BUF_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-	// Initialize SquareLine Studio generated UI
-	ui_init();
+	// Log memory before initializing UI
+	{
+		lv_mem_monitor_t mon;
+		lv_mem_monitor(&mon);
+		size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+		ESP_LOGI(TAG,
+				 "Before ui_init: esp_free_8bit=%zu LVGL total=%zu free=%zu "
+				 "used=%zu (%u%%) biggest_free=%zu frag=%u%%",
+				 free_heap, mon.total_size, mon.free_size,
+				 mon.total_size - mon.free_size, mon.used_pct,
+				 mon.free_biggest_size, mon.frag_pct);
+	}
 
+	// Start LVGL tick timer & LVGL handler task before initializing UI
+	// so the UI initialization can be scheduled to run in the LVGL task.
+	UIController::instance().startLVGLTickTimer();
+	UIController::instance().startLVGLTask();
+
+	// Initialize SquareLine Studio generated UI synchronously here.
+	// Doing it here ensures the UI objects are created before any
+	// application schedules callbacks that operate on them.
+	ui_init();
+	ESP_LOGI(TAG, "ui_init completed");
+
+	// Log memory after ui_init
+
+	lv_mem_monitor_t mon;
+	lv_mem_monitor(&mon);
+	size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+	ESP_LOGI(TAG,
+			 "After ui_init: esp_free_8bit=%zu LVGL total=%zu free=%zu "
+			 "used=%zu (%u%%) biggest_free=%zu frag=%u%%",
+			 free_heap, mon.total_size, mon.free_size,
+			 mon.total_size - mon.free_size, mon.used_pct,
+			 mon.free_biggest_size, mon.frag_pct);
+
+	// Schedule theme application on LVGL task as well based on configured State
+
+	int theme_from_state = State::getInstance().getUITheme();
+	ESP_LOGI(TAG, "Scheduling UI theme: %d", theme_from_state);
+	int *pTheme = (int *)malloc(sizeof(int));
+	if (pTheme) {
+		*pTheme = theme_from_state;
+		lv_async_call(
+			[](void *arg) {
+				int theme = *((int *)arg);
+				free(arg);
+				ui_theme_set(theme);
+				switch (theme) {
+				case UI_THEME_DEFAULT:
+					ESP_LOGI(TAG, "Applied UI theme: DEFAULT");
+					if (ui_LogoImg)
+						lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+					else
+						ESP_LOGW(
+							TAG,
+							"ui_LogoImg is NULL when applying theme DEFAULT");
+					break;
+				case UI_THEME_TOYO:
+					ESP_LOGI(TAG, "Applied UI theme: TOYO");
+					if (ui_LogoImg)
+						lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+					else
+						ESP_LOGW(TAG,
+								 "ui_LogoImg is NULL when applying theme TOYO");
+					break;
+				case UI_THEME_HYBRID:
+					ESP_LOGI(TAG, "Applied UI theme: HYBRID");
+					if (ui_LogoImg)
+						lv_image_set_src(ui_LogoImg, &ui_img_toyotablue_png);
+					else
+						ESP_LOGW(
+							TAG,
+							"ui_LogoImg is NULL when applying theme HYBRID");
+					break;
+				default:
+					ESP_LOGI(TAG, "Applied UI theme: UNKNOWN (%d)", theme);
+					if (ui_LogoImg)
+						lv_image_set_src(ui_LogoImg, &ui_img_1818877690);
+					else
+						ESP_LOGW(
+							TAG,
+							"ui_LogoImg is NULL when applying theme UNKNOWN");
+					break;
+				}
+			},
+			pTheme);
+	}
 	ESP_LOGI(TAG, "Display setup done");
 }
 
@@ -189,16 +284,17 @@ void DisplayManager::setBacklightBrightness(uint8_t brightness) {
 	if (brightness > 100) {
 		brightness = 100;
 	}
-	
+
 	// Convert percentage to duty cycle (0-255 for 8-bit resolution)
 	uint32_t duty = (brightness * 255) / 100;
-	
+
 	// Update PWM duty cycle for backlight control
-	ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, 
-	                               static_cast<ledc_channel_t>(BACKLIGHT_CHANNEL), 
-	                               duty));
-	ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, 
-	                                  static_cast<ledc_channel_t>(BACKLIGHT_CHANNEL)));
-	
-	ESP_LOGI(TAG, "Backlight brightness set to %d%% (duty: %lu/255)", brightness, duty);
+	ESP_ERROR_CHECK(
+		ledc_set_duty(LEDC_LOW_SPEED_MODE,
+					  static_cast<ledc_channel_t>(BACKLIGHT_CHANNEL), duty));
+	ESP_ERROR_CHECK(ledc_update_duty(
+		LEDC_LOW_SPEED_MODE, static_cast<ledc_channel_t>(BACKLIGHT_CHANNEL)));
+
+	ESP_LOGI(TAG, "Backlight brightness set to %d%% (duty: %lu/255)",
+			 brightness, duty);
 }
