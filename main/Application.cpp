@@ -18,6 +18,7 @@
 #include <dirent.h>            // Directory operations
 #include "UI/ui.h"
 #include "UIBikeController.h"
+#include "UICarController.h"
 
 /// Global button state for ISR and task interaction
 static Application::ButtonState g_buttonState = {};
@@ -748,7 +749,12 @@ void Application::showPairScreenCallback(void *arg) {
  */
 void Application::initializeLabelsCallback(void *arg) {
 	(void)arg;
-	UIBikeController::instance().initializeLabels();
+	State &state = State::getInstance();
+	if (state.getMode() == MODE_BIKE) {
+		UIBikeController::instance().initializeLabels();
+	} else {
+		UICarController::instance().initializeLabels();
+	}
 }
 
 /**
@@ -765,23 +771,46 @@ void Application::updateLabelsCallback(void *arg) {
 		TPMSSensor *frontSensor = nullptr;
 		TPMSSensor *rearSensor = nullptr;
 
-	auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
-	if (frontIt != state.getData().end()) {
-		frontSensor = frontIt->second;
-	}
+		auto frontIt = state.getData().find(state.getAddress(SENSOR_BIKE_FRONT));
+		if (frontIt != state.getData().end()) {
+			frontSensor = frontIt->second;
+		}
 
-	auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
-	if (rearIt != state.getData().end()) {
-		rearSensor = rearIt->second;
-	}
+		auto rearIt = state.getData().find(state.getAddress(SENSOR_BIKE_REAR));
+		if (rearIt != state.getData().end()) {
+			rearSensor = rearIt->second;
+		}
 
-	// Update alert blink state for warning indicators
-	uint32_t currentTime = esp_timer_get_time() / 1000;
-	UIBikeController::instance().updateAlertBlinkState(currentTime);
+		// Update alert blink state for warning indicators
+		uint32_t currentTime = esp_timer_get_time() / 1000;
+		UIBikeController::instance().updateAlertBlinkState(currentTime);
 
-	// Update UI with current sensor readings
-	UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
-											  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+		// Update UI with current sensor readings
+		UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
+												  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+	} else if (state.getMode() == MODE_CAR) {
+		// Map sensors to UI positions in order: FrontLeft (C1), RearLeft (C2), FrontRight (C3), RearRight (C4)
+		TPMSSensor *s_fl = nullptr;
+		TPMSSensor *s_fr = nullptr;
+		TPMSSensor *s_rl = nullptr;
+		TPMSSensor *s_rr = nullptr;
+
+		auto it_fl = state.getData().find(state.getAddress(SENSOR_CAR_FRONT_LEFT));
+		if (it_fl != state.getData().end()) s_fl = it_fl->second;
+		auto it_fr = state.getData().find(state.getAddress(SENSOR_CAR_FRONT_RIGHT));
+		if (it_fr != state.getData().end()) s_fr = it_fr->second;
+		auto it_rl = state.getData().find(state.getAddress(SENSOR_CAR_REAR_LEFT));
+		if (it_rl != state.getData().end()) s_rl = it_rl->second;
+		auto it_rr = state.getData().find(state.getAddress(SENSOR_CAR_REAR_RIGHT));
+		if (it_rr != state.getData().end()) s_rr = it_rr->second;
+
+		uint32_t currentTime = esp_timer_get_time() / 1000;
+		UICarController::instance().updateAlertBlinkState(currentTime);
+		// Pass sensors ordered as C1..C4 -> FrontLeft, RearLeft, FrontRight, RearRight
+		UICarController::instance().updateSensorUI(s_fl, s_rl, s_fr, s_rr,
+			state.getIdealPSI(SENSOR_CAR_FRONT_LEFT), state.getIdealPSI(SENSOR_CAR_REAR_LEFT),
+			state.getIdealPSI(SENSOR_CAR_FRONT_RIGHT), state.getIdealPSI(SENSOR_CAR_REAR_RIGHT),
+			currentTime);
 	}
 	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
 	

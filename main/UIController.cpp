@@ -145,7 +145,12 @@ void UIController::showSplashScreen() {
  *          Images are loaded immediately. Frees splash images first to reclaim memory.
  */
 void UIController::showMainScreen() {
-	lv_screen_load_anim(ui_Main, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
+	State &state = State::getInstance();
+	if (state.getMode() == MODE_CAR) {
+		lv_screen_load_anim(ui_CarMain, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
+	} else {
+		lv_screen_load_anim(ui_Main, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 0, false);
+	}
 }
 
 /**

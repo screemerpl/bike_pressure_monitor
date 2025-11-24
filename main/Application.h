@@ -12,7 +12,7 @@
 /**
  * @class Application
  * @brief Main application controller - singleton orchestrating all subsystems
- * @details Manages the complete lifecycle of the bike pressure monitor application:
+ * @details Manages the complete lifecycle of the Universal Pressure Monitor application:
  *          - Configuration loading/saving
  *          - Display initialization and UI control
  *          - BLE scanning for TPMS sensors
