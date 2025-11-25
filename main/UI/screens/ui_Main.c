@@ -117,16 +117,16 @@ void ui_Main_screen_init(void)
     lv_arc_set_mode(ui_Battery2, LV_ARC_MODE_REVERSE);
     lv_arc_set_rotation(ui_Battery2, 180);
     ui_object_set_themeable_style_property(ui_Battery2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
-                                           _ui_theme_color_Bright);
+                                           _ui_theme_color_Standard);
     ui_object_set_themeable_style_property(ui_Battery2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
-                                           _ui_theme_alpha_Bright);
+                                           _ui_theme_alpha_Standard);
     lv_obj_set_style_arc_width(ui_Battery2, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_rounded(ui_Battery2, true, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_object_set_themeable_style_property(ui_Battery2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
-                                           _ui_theme_color_Standard);
+                                           _ui_theme_color_Bright);
     ui_object_set_themeable_style_property(ui_Battery2, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
-                                           _ui_theme_alpha_Standard);
+                                           _ui_theme_alpha_Bright);
 
     ui_object_set_themeable_style_property(ui_Battery2, LV_PART_KNOB | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
                                            _ui_theme_color_Text);
