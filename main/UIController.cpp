@@ -116,7 +116,7 @@ void UIController::setVersionLabel() {
 		return;
 	}
 	char versionText[32];
-	snprintf(versionText, sizeof(versionText), "V:%s", Application::appVersion);
+	snprintf(versionText, sizeof(versionText), "V:%s", "1.0.1");//Application::appVersion);
 	ESP_LOGD("UIController", "Setting version label to %s", versionText);
 	lv_label_set_text(ui_VersionStr, versionText);
 	m_versionLabelSet = true;

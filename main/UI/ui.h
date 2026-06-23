@@ -54,6 +54,7 @@ extern lv_image_dsc_t ui_img_alert_png;   // assets/alert.png
 void ui_img_alert_png_load();
 extern lv_image_dsc_t ui_img_tpmsblack_png;   // assets/tpmsblack.png
 void ui_img_tpmsblack_png_load();
+LV_IMG_DECLARE(ui_img_dragstar_png);   // assets/dragstar.png
 LV_IMG_DECLARE(ui_img_toyotared_png);   // assets/toyotared.png
 LV_IMG_DECLARE(ui_img_toyotablue_png);   // assets/toyotablue.png
 

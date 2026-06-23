@@ -49,7 +49,13 @@ public:
      */
     void updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSensor,
                         float frontIdealPSI, float rearIdealPSI,
-                        uint32_t currentTime);
+                        uint32_t currentTime,
+                        bool hasFrontLastReading = false,
+                        float frontLastPressurePSI = 0.0f,
+                        bool hasRearLastReading = false,
+                        float rearLastPressurePSI = 0.0f,
+                        bool frontAwaitingSync = false,
+                        bool rearAwaitingSync = false);
 
     /**
      * @brief Get current alert blink state
@@ -68,13 +74,19 @@ public:
      * @brief Clear front sensor display
      * @param applyBlink If true, apply 500ms label blink effect
      */
-    void clearFrontSensorUI(bool applyBlink = false);
+    void clearFrontSensorUI(bool applyBlink = false,
+                            bool hasLastReading = false,
+                            float lastPressurePSI = 0.0f,
+                            bool blinkBluetooth = false);
 
     /**
      * @brief Clear rear sensor display
      * @param applyBlink If true, apply 500ms label blink effect
      */
-    void clearRearSensorUI(bool applyBlink = false);
+    void clearRearSensorUI(bool applyBlink = false,
+                           bool hasLastReading = false,
+                           float lastPressurePSI = 0.0f,
+                           bool blinkBluetooth = false);
 
 private:
     UIBikeController() = default;

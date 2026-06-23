@@ -245,7 +245,7 @@ void DisplayManager::init() {
 				case UI_THEME_TOYO:
 					ESP_LOGI(TAG, "Applied UI theme: TOYO");
 					if (ui_LogoImg)
-						lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+						lv_image_set_src(ui_LogoImg, &ui_img_dragstar_png);
 					else
 						ESP_LOGW(TAG,
 								 "ui_LogoImg is NULL when applying theme TOYO");

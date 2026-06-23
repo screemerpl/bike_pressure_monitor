@@ -34,6 +34,7 @@ static constexpr uint32_t LONG_PRESS_DURATION_MS = 2000;     ///< Duration for l
 static constexpr uint32_t VERY_LONG_PRESS_DURATION_MS = 15000; ///< Duration for very long press (WiFi mode)
 static constexpr uint32_t CONTROL_LOOP_DELAY_MS = 100;       ///< Main control loop iteration delay
 static constexpr uint32_t BLE_SCAN_TIME_MS = 1000;           ///< BLE scan window duration
+static constexpr uint32_t LAST_READING_SAVE_INTERVAL_MS = 30000; ///< Min interval between persisted reading writes
 
 // Default configuration values
 static constexpr float DEFAULT_FRONT_PSI = 36.0f;            ///< Default front tire pressure
@@ -186,6 +187,14 @@ void Application::loadConfiguration() {
 	std::string unit;
 	m_config.getString("pressure_unit", unit, "PSI");
 	state.setPressureUnit(unit);
+
+	// Load persisted last sensor pressures for fallback display
+	for (int i = 0; i < 4; ++i) {
+		float persistedPSI = 0.0f;
+		std::string key = "sensor_last_psi_" + std::to_string(i);
+		bool hasPersisted = m_config.getFloat(key, persistedPSI, 0.0f);
+		state.setLastReading(i, hasPersisted, persistedPSI);
+	}
 
 	// Load UI theme preference (integer index -- UI_THEME_DEFAULT, UI_THEME_TOYO, UI_THEME_HYBRID)
 	int uiTheme = UI_THEME_DEFAULT;
@@ -597,8 +606,11 @@ void Application::handleLongPress() {
 	for (int i = 0; i < 4; ++i) {
 		std::string k0 = "sensor_address_" + std::to_string(i);
 		std::string k1 = "sensor_address_" + std::to_string(i + 1);
+		std::string lastPressureKey = "sensor_last_psi_" + std::to_string(i);
 		m_config.setString(k0, "");
 		m_config.setString(k1, "");
+		m_config.deleteKey(lastPressureKey);
+		State::getInstance().setLastReading(i, false, 0.0f);
 	}
 	// Legacy keys 'front_address'/'rear_address' are deprecated; we only use sensor_address_x
 	m_config.setFloat("sensor_ideal_psi_0", DEFAULT_FRONT_PSI);
@@ -685,7 +697,7 @@ static void applyThemeAsyncCallback(void *arg) {
 			break;
 		case UI_THEME_TOYO:
 			ESP_LOGI(TAG, "Applied UI theme: TOYO");
-			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_toyotared_png);
+			if (ui_LogoImg) lv_image_set_src(ui_LogoImg, &ui_img_dragstar_png);
 			else ESP_LOGW(TAG, "ui_LogoImg is NULL when applying theme TOYO");
 			break;
 		case UI_THEME_HYBRID:
@@ -765,6 +777,7 @@ void Application::initializeLabelsCallback(void *arg) {
  */
 void Application::updateLabelsCallback(void *arg) {
 	(void)arg;
+	Application &app = Application::instance();
 	State &state = State::getInstance();
 
 	if (state.getMode() == MODE_BIKE) {
@@ -783,11 +796,21 @@ void Application::updateLabelsCallback(void *arg) {
 
 		// Update alert blink state for warning indicators
 		uint32_t currentTime = esp_timer_get_time() / 1000;
+		app.persistLastSensorReadingIfNeeded(SENSOR_BIKE_FRONT, frontSensor, currentTime);
+		app.persistLastSensorReadingIfNeeded(SENSOR_BIKE_REAR, rearSensor, currentTime);
+
+		const State::LastSensorReading &frontLast = state.getLastReading(SENSOR_BIKE_FRONT);
+		const State::LastSensorReading &rearLast = state.getLastReading(SENSOR_BIKE_REAR);
+		const bool frontAwaitingSync = frontSensor == nullptr && !state.getAddress(SENSOR_BIKE_FRONT).empty();
+		const bool rearAwaitingSync = rearSensor == nullptr && !state.getAddress(SENSOR_BIKE_REAR).empty();
 		UIBikeController::instance().updateAlertBlinkState(currentTime);
 
 		// Update UI with current sensor readings
 		UIBikeController::instance().updateSensorUI(frontSensor, rearSensor, state.getIdealPSI(SENSOR_BIKE_FRONT),
-												  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime);
+											  state.getIdealPSI(SENSOR_BIKE_REAR), currentTime,
+											  frontLast.valid, frontLast.pressurePSI,
+											  rearLast.valid, rearLast.pressurePSI,
+											  frontAwaitingSync, rearAwaitingSync);
 	} else if (state.getMode() == MODE_CAR) {
 		// Map sensors to UI positions in order: FrontLeft (C1), RearLeft (C2), FrontRight (C3), RearRight (C4)
 		TPMSSensor *s_fl = nullptr;
@@ -805,15 +828,67 @@ void Application::updateLabelsCallback(void *arg) {
 		if (it_rr != state.getData().end()) s_rr = it_rr->second;
 
 		uint32_t currentTime = esp_timer_get_time() / 1000;
+		app.persistLastSensorReadingIfNeeded(SENSOR_CAR_FRONT_LEFT, s_fl, currentTime);
+		app.persistLastSensorReadingIfNeeded(SENSOR_CAR_REAR_LEFT, s_rl, currentTime);
+		app.persistLastSensorReadingIfNeeded(SENSOR_CAR_FRONT_RIGHT, s_fr, currentTime);
+		app.persistLastSensorReadingIfNeeded(SENSOR_CAR_REAR_RIGHT, s_rr, currentTime);
+
+		bool hasLastReading[4] = {
+			state.getLastReading(SENSOR_CAR_FRONT_LEFT).valid,
+			state.getLastReading(SENSOR_CAR_REAR_LEFT).valid,
+			state.getLastReading(SENSOR_CAR_FRONT_RIGHT).valid,
+			state.getLastReading(SENSOR_CAR_REAR_RIGHT).valid,
+		};
+		float lastPressurePSI[4] = {
+			state.getLastReading(SENSOR_CAR_FRONT_LEFT).pressurePSI,
+			state.getLastReading(SENSOR_CAR_REAR_LEFT).pressurePSI,
+			state.getLastReading(SENSOR_CAR_FRONT_RIGHT).pressurePSI,
+			state.getLastReading(SENSOR_CAR_REAR_RIGHT).pressurePSI,
+		};
+		bool awaitingSync[4] = {
+			s_fl == nullptr && !state.getAddress(SENSOR_CAR_FRONT_LEFT).empty(),
+			s_rl == nullptr && !state.getAddress(SENSOR_CAR_REAR_LEFT).empty(),
+			s_fr == nullptr && !state.getAddress(SENSOR_CAR_FRONT_RIGHT).empty(),
+			s_rr == nullptr && !state.getAddress(SENSOR_CAR_REAR_RIGHT).empty(),
+		};
+
 		UICarController::instance().updateAlertBlinkState(currentTime);
 		// Pass sensors ordered as C1..C4 -> FrontLeft, RearLeft, FrontRight, RearRight
 		UICarController::instance().updateSensorUI(s_fl, s_rl, s_fr, s_rr,
 			state.getIdealPSI(SENSOR_CAR_FRONT_LEFT), state.getIdealPSI(SENSOR_CAR_REAR_LEFT),
 			state.getIdealPSI(SENSOR_CAR_FRONT_RIGHT), state.getIdealPSI(SENSOR_CAR_REAR_RIGHT),
-			currentTime);
+			currentTime, hasLastReading, lastPressurePSI, awaitingSync);
 	}
 	// Look up sensor data by address (works with both Type 1 and Type 2 sensors)
 	
+}
+
+void Application::persistLastSensorReadingIfNeeded(int sensorIndex, TPMSSensor *sensor,
+									   uint32_t currentTime) {
+	if (sensor == nullptr || sensorIndex < 0 || sensorIndex > 3) {
+		return;
+	}
+
+	static uint32_t s_lastPersistTime[4] = {0, 0, 0, 0};
+	static float s_lastPersistPressure[4] = {-1.0f, -1.0f, -1.0f, -1.0f};
+
+	const float pressurePSI = sensor->getPressurePSI();
+	const bool pressureChanged = (s_lastPersistPressure[sensorIndex] < 0.0f) ||
+								 (pressurePSI > s_lastPersistPressure[sensorIndex] + 0.05f) ||
+								 (pressurePSI < s_lastPersistPressure[sensorIndex] - 0.05f);
+	const bool intervalElapsed =
+		(currentTime - s_lastPersistTime[sensorIndex]) >= LAST_READING_SAVE_INTERVAL_MS;
+
+	if (!pressureChanged && !intervalElapsed) {
+		return;
+	}
+
+	std::string key = "sensor_last_psi_" + std::to_string(sensorIndex);
+	if (m_config.setFloat(key, pressurePSI)) {
+		State::getInstance().setLastReading(sensorIndex, true, pressurePSI);
+		s_lastPersistPressure[sensorIndex] = pressurePSI;
+		s_lastPersistTime[sensorIndex] = currentTime;
+	}
 }
 
 /**

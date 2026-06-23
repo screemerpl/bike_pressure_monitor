@@ -60,7 +60,13 @@ void UIBikeController::initializeLabels() {
  */
 void UIBikeController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearSensor,
                                       float frontIdealPSI, float rearIdealPSI,
-                                      uint32_t currentTime) {
+                                      uint32_t currentTime,
+                                      bool hasFrontLastReading,
+                                      float frontLastPressurePSI,
+                                      bool hasRearLastReading,
+                                      float rearLastPressurePSI,
+                                      bool frontAwaitingSync,
+                                      bool rearAwaitingSync) {
     bool alertFront = false;
     bool alertRear = false;
 
@@ -69,7 +75,8 @@ void UIBikeController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearS
 
         alertFront = frontSensor->getAlert();
     } else {
-        clearFrontSensorUI(true); // true = apply blink
+        clearFrontSensorUI(!hasFrontLastReading, hasFrontLastReading,
+                           frontLastPressurePSI, frontAwaitingSync);
     }
 
     if (rearSensor) {
@@ -77,7 +84,8 @@ void UIBikeController::updateSensorUI(TPMSSensor *frontSensor, TPMSSensor *rearS
 
         alertRear = rearSensor->getAlert();
     } else {
-        clearRearSensorUI(true); // true = apply blink
+        clearRearSensorUI(!hasRearLastReading, hasRearLastReading,
+                          rearLastPressurePSI, rearAwaitingSync);
     }
 
     updateAlertIcons(alertFront, alertRear);
@@ -241,11 +249,29 @@ void UIBikeController::updateRearSensorUI(TPMSSensor *rearSensor, float rearIdea
  * @details Resets all front sensor UI elements to default/empty state.
  *          Blinking (white <-> black) indicates sensor is not synchronized.
  */
-void UIBikeController::clearFrontSensorUI(bool applyBlink) {
-    lv_label_set_text(ui_Pressure1, "---");
+void UIBikeController::clearFrontSensorUI(bool applyBlink, bool hasLastReading,
+                                          float lastPressurePSI,
+                                          bool blinkBluetooth) {
+    State &state = State::getInstance();
+    char buf[16];
+
+    if (hasLastReading) {
+        if (state.getPressureUnit() == "BAR") {
+            snprintf(buf, sizeof(buf), "%.2f", lastPressurePSI * 0.0689476f);
+        } else {
+            snprintf(buf, sizeof(buf), "%.1f", lastPressurePSI);
+        }
+        lv_label_set_text(ui_Pressure1, buf);
+    } else {
+        lv_label_set_text(ui_Pressure1, "---");
+    }
 
     // Apply blinking effect only if requested: white when blink state is true,
     // black when false
+    if (blinkBluetooth) {
+        applyBlink = false;
+    }
+
     if (applyBlink) {
         if (m_labelBlinkState) {
             // Blink: use theme text color
@@ -270,7 +296,11 @@ void UIBikeController::clearFrontSensorUI(bool applyBlink) {
     lv_arc_set_value(ui_Battery1, 0);
     lv_bar_set_value(ui_BatteryBar1, -10, LV_ANIM_ON);
     lv_image_set_src(ui_TPMSicon1, &ui_img_tpmsblack_png);
-    lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
+    if (blinkBluetooth) {
+        lv_image_set_src(ui_BTicon1, m_labelBlinkState ? &ui_img_bton_png : &ui_img_btoff_png);
+    } else {
+        lv_image_set_src(ui_BTicon1, &ui_img_btoff_png);
+    }
     /* Chroma key removed - image sources set without colorkey */
 }
 
@@ -279,11 +309,29 @@ void UIBikeController::clearFrontSensorUI(bool applyBlink) {
  * @param applyBlink If true, apply 500ms blink effect to pressure label
  * @details Same as clearFrontSensorUI but for rear tire UI elements
  */
-void UIBikeController::clearRearSensorUI(bool applyBlink) {
-    lv_label_set_text(ui_Pressure2, "---");
+void UIBikeController::clearRearSensorUI(bool applyBlink, bool hasLastReading,
+                                         float lastPressurePSI,
+                                         bool blinkBluetooth) {
+    State &state = State::getInstance();
+    char buf[16];
+
+    if (hasLastReading) {
+        if (state.getPressureUnit() == "BAR") {
+            snprintf(buf, sizeof(buf), "%.2f", lastPressurePSI * 0.0689476f);
+        } else {
+            snprintf(buf, sizeof(buf), "%.1f", lastPressurePSI);
+        }
+        lv_label_set_text(ui_Pressure2, buf);
+    } else {
+        lv_label_set_text(ui_Pressure2, "---");
+    }
 
     // Apply blinking effect only if requested: white when blink state is true,
     // black when false
+    if (blinkBluetooth) {
+        applyBlink = false;
+    }
+
     if (applyBlink) {
         if (m_labelBlinkState) {
             // Blink on: theme text color
@@ -308,7 +356,11 @@ void UIBikeController::clearRearSensorUI(bool applyBlink) {
     lv_arc_set_value(ui_Battery2, 0);
     lv_bar_set_value(ui_BatteryBar2, -10, LV_ANIM_ON);
     lv_image_set_src(ui_TPMSicon2, &ui_img_tpmsblack_png);
-    lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
+    if (blinkBluetooth) {
+        lv_image_set_src(ui_BTicon2, m_labelBlinkState ? &ui_img_bton_png : &ui_img_btoff_png);
+    } else {
+        lv_image_set_src(ui_BTicon2, &ui_img_btoff_png);
+    }
 }
 
 /**

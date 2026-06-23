@@ -48,7 +48,10 @@ public:
      */
     void updateSensorUI(TPMSSensor *s1, TPMSSensor *s2, TPMSSensor *s3, TPMSSensor *s4,
                         float ideal1, float ideal2, float ideal3, float ideal4,
-                        uint32_t currentTime);
+                        uint32_t currentTime,
+                        const bool *hasLastReading = nullptr,
+                        const float *lastPressurePSI = nullptr,
+                        const bool *awaitingSync = nullptr);
 
     /**
      * @brief Get current alert blink state
@@ -72,7 +75,10 @@ private:
     UICarController &operator=(const UICarController &) = delete;
 
     void updateSensorUIInternal(int index, TPMSSensor *sensor, float idealPSI, uint32_t currentTime);
-    void clearSensorUIInternal(int index, bool applyBlink);
+    void clearSensorUIInternal(int index, bool applyBlink,
+                               bool hasLastReading = false,
+                               float lastPressurePSI = 0.0f,
+                               bool blinkBluetooth = false);
     void updateAlertIcons(bool a1, bool a2, bool a3, bool a4);
 
     bool m_alertBlinkState = false;      ///< Alert icon blink state (250ms period)

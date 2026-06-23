@@ -4,6 +4,7 @@
 #include "DisplayManager.h"
 #include "PairController.h"
 #include "TPMSScanCallbacks.h"
+#include "TPMSSensor.h"
 #include "UIController.h"
 #include "WiFiManager.h"
 #include "WebServer.h"
@@ -107,6 +108,8 @@ private:
 	void handleShortPress();     ///< Short press: Cycle brightness or pairing action
 	void cycleBrightness();      ///< Cycle through 5 brightness levels (10-100%)
 	void updateUIIfPaired();     ///< Refresh sensor data on main screen
+	void persistLastSensorReadingIfNeeded(int sensorIndex, class TPMSSensor *sensor,
+									  uint32_t currentTime); ///< Persist last pressure reading (throttled)
 	
 	// WiFi config mode helpers
 	bool isWiFiConfigMode();     ///< Check if wifi_config_mode flag is set in NVS

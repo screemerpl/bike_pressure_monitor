@@ -71,32 +71,48 @@ void UICarController::initializeLabels() {
 
 void UICarController::updateSensorUI(TPMSSensor *s1, TPMSSensor *s2, TPMSSensor *s3, TPMSSensor *s4,
                                      float ideal1, float ideal2, float ideal3, float ideal4,
-                                     uint32_t currentTime) {
+                                     uint32_t currentTime,
+                                     const bool *hasLastReading,
+                                     const float *lastPressurePSI,
+                                     const bool *awaitingSync) {
     bool a1 = false, a2 = false, a3 = false, a4 = false;
+
+    const bool hasLast0 = hasLastReading ? hasLastReading[0] : false;
+    const bool hasLast1 = hasLastReading ? hasLastReading[1] : false;
+    const bool hasLast2 = hasLastReading ? hasLastReading[2] : false;
+    const bool hasLast3 = hasLastReading ? hasLastReading[3] : false;
+    const float last0 = lastPressurePSI ? lastPressurePSI[0] : 0.0f;
+    const float last1 = lastPressurePSI ? lastPressurePSI[1] : 0.0f;
+    const float last2 = lastPressurePSI ? lastPressurePSI[2] : 0.0f;
+    const float last3 = lastPressurePSI ? lastPressurePSI[3] : 0.0f;
+    const bool sync0 = awaitingSync ? awaitingSync[0] : false;
+    const bool sync1 = awaitingSync ? awaitingSync[1] : false;
+    const bool sync2 = awaitingSync ? awaitingSync[2] : false;
+    const bool sync3 = awaitingSync ? awaitingSync[3] : false;
 
     if (s1) {
         updateSensorUIInternal(0, s1, ideal1, currentTime);
         a1 = s1->getAlert();
     } else {
-        clearSensorUIInternal(0, true);
+        clearSensorUIInternal(0, !sync0 && !hasLast0, hasLast0, last0, sync0);
     }
     if (s2) {
         updateSensorUIInternal(1, s2, ideal2, currentTime);
         a2 = s2->getAlert();
     } else {
-        clearSensorUIInternal(1, true);
+        clearSensorUIInternal(1, !sync1 && !hasLast1, hasLast1, last1, sync1);
     }
     if (s3) {
         updateSensorUIInternal(2, s3, ideal3, currentTime);
         a3 = s3->getAlert();
     } else {
-        clearSensorUIInternal(2, true);
+        clearSensorUIInternal(2, !sync2 && !hasLast2, hasLast2, last2, sync2);
     }
     if (s4) {
         updateSensorUIInternal(3, s4, ideal4, currentTime);
         a4 = s4->getAlert();
     } else {
-        clearSensorUIInternal(3, true);
+        clearSensorUIInternal(3, !sync3 && !hasLast3, hasLast3, last3, sync3);
     }
 
     updateAlertIcons(a1, a2, a3, a4);
@@ -178,7 +194,12 @@ void UICarController::updateSensorUIInternal(int idx, TPMSSensor *sensor, float 
     }
 }
 
-void UICarController::clearSensorUIInternal(int idx, bool applyBlink) {
+void UICarController::clearSensorUIInternal(int idx, bool applyBlink,
+                                            bool hasLastReading,
+                                            float lastPressurePSI,
+                                            bool blinkBluetooth) {
+    State &state = State::getInstance();
+    char buf[16];
     lv_obj_t *pressureLabel = nullptr;
     lv_obj_t *tempLabel = nullptr;
     lv_obj_t *batteryLabel = nullptr;
@@ -208,7 +229,21 @@ void UICarController::clearSensorUIInternal(int idx, bool applyBlink) {
             return;
     }
 
-    lv_label_set_text(pressureLabel, "---");
+    if (hasLastReading) {
+        if (state.getPressureUnit() == "BAR") {
+            snprintf(buf, sizeof(buf), "%.2f", lastPressurePSI * 0.0689476f);
+        } else {
+            snprintf(buf, sizeof(buf), "%.1f", lastPressurePSI);
+        }
+        lv_label_set_text(pressureLabel, buf);
+    } else {
+        lv_label_set_text(pressureLabel, "---");
+    }
+
+    if (blinkBluetooth) {
+        applyBlink = false;
+    }
+
     if (applyBlink) {
         if (m_labelBlinkState) {
             lv_obj_set_style_text_color(pressureLabel, ui_theme_get_lv_color(UI_THEME_COLOR_TEXT), LV_PART_MAIN);
@@ -224,7 +259,11 @@ void UICarController::clearSensorUIInternal(int idx, bool applyBlink) {
     lv_arc_set_value(batteryArc, 0);
     lv_bar_set_value(batteryBar, -10, LV_ANIM_ON);
     lv_image_set_src(tpmsIcon, &ui_img_tpmsblack_png);
-    lv_image_set_src(btIcon, &ui_img_btoff_png);
+    if (blinkBluetooth) {
+        lv_image_set_src(btIcon, m_labelBlinkState ? &ui_img_bton_png : &ui_img_btoff_png);
+    } else {
+        lv_image_set_src(btIcon, &ui_img_btoff_png);
+    }
 }
 
 void UICarController::updateAlertIcons(bool a1, bool a2, bool a3, bool a4) {

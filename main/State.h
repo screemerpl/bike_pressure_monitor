@@ -45,6 +45,11 @@
  */
 class State {
 public:
+	struct LastSensorReading {
+		bool valid = false;
+		float pressurePSI = 0.0f;
+	};
+
 	/**
 	 * @brief Get singleton instance
 	 * @return Reference to the State singleton
@@ -104,6 +109,14 @@ public:
 	/** @brief Set current UI theme index */
 	void setUITheme(int theme) { m_uiTheme = theme; }
 
+	/** @brief Get last persisted sensor reading by index (0..3) */
+	const LastSensorReading &getLastReading(int index) const { return m_lastReadings[index]; }
+	/** @brief Set last persisted sensor reading by index (0..3) */
+	void setLastReading(int index, bool valid, float pressurePSI) {
+		m_lastReadings[index].valid = valid;
+		m_lastReadings[index].pressurePSI = pressurePSI;
+	}
+
 private:
 	State() = default;                           ///< Private constructor for singleton
 	State(const State &) = delete;               ///< No copy constructor
@@ -125,6 +138,7 @@ private:
 	float m_idealPressures[4];                          ///< Array of ideal pressures for up to 4 tires
 	int m_mode = MODE_BIKE;                             ///< Operating mode: bike or car
 	int m_uiTheme = 0;                                  ///< UI theme index (UI_THEME_DEFAULT)
+	LastSensorReading m_lastReadings[4];                ///< Last persisted pressure readings
 
 };
 
